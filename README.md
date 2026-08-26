@@ -127,6 +127,21 @@ because the earlier tests all reached into this checkout, and therefore never
 noticed that the documented Makefile referenced paths `sync.sh` had not
 vendored.
 
+## Releasing
+
+Releases are automated by
+[Release Please](https://github.com/googleapis/release-please). Every push to
+`main` updates a release pull request; merging it updates `CHANGELOG.md` and
+`VERSION`, tags the commit, and publishes the GitHub Release. Nobody picks a
+version by hand — it comes from Conventional Commit subjects since the last
+release. While infra-kit is pre-1.0, a `!` breaking change bumps the minor
+rather than the major.
+
+The release pull request uses `GITHUB_TOKEN`, so GitHub does not start another
+workflow for commits it creates. The same checks run on every push to `main` as
+well as on ordinary pull requests, so every commit that can be tagged is
+covered.
+
 ## Licence
 
 MIT.
