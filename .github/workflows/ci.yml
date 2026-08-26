@@ -1,0 +1,27 @@
+name: Quality
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - name: Install sops, age and shellcheck
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq age shellcheck
+          SOPS_VERSION=3.13.3
+          sudo curl -fsSL --proto '=https' --tlsv1.2 \
+            "https://github.com/getsops/sops/releases/download/v${SOPS_VERSION}/sops-v${SOPS_VERSION}.linux.amd64" \
+            -o /usr/local/bin/sops
+          sudo chmod +x /usr/local/bin/sops
+      - run: make check
