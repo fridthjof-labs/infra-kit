@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/infra-kit-icon.png" alt="Infra Kit icon" width="180">
+</p>
+
 # infra-kit
 
 The shared operating layer for encrypted OpenTofu infrastructure, vendored into
