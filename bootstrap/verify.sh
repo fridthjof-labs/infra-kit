@@ -14,7 +14,7 @@ if [[ -z "$vendor_dir" ]]; then
   exit 1
 fi
 
-lock="$(dirname "$vendor_dir")/infra-kit.lock"
+lock="${vendor_dir%/}.lock"
 
 if [[ ! -d "$vendor_dir" ]]; then
   echo "error: vendored infra-kit not found: $vendor_dir" >&2

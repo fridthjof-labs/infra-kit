@@ -8,20 +8,18 @@ set -euo pipefail
 # `apply` verify the committed bytes offline against the lock and never
 # download anything — an upgrade is a reviewed commit, not a side effect.
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=digest.sh
-source "${SCRIPT_DIR}/digest.sh"
-
 usage() {
   cat <<'EOF'
 Usage:
   sync.sh --version VERSION --vendor-dir DIR [--repo OWNER/NAME] [--source PATH]
 
-Downloads infra-kit VERSION, replaces DIR with its hack/ directory, and writes
-DIR/../infra-kit.lock recording the version and digest.
+Downloads infra-kit VERSION and replaces DIR with its vendored payload
+(hack/, bootstrap/, VERSION), then writes DIR.lock recording version and digest.
 
-  --source PATH   Vendor from a local checkout instead of downloading. Used by
-                  the tests and when developing infra-kit itself.
+  --source PATH   Vendor from a local checkout instead of downloading.
+
+While the repository is private, the download uses `gh` and needs an
+authenticated GitHub CLI. Public releases fall back to curl.
 EOF
 }
 
@@ -30,6 +28,7 @@ vendor_dir=""
 repo="fridthjof-labs/infra-kit"
 source_path=""
 
+args=("$@")
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --version) version="$2"; shift 2 ;;
@@ -47,43 +46,77 @@ if [[ -z "$version" || -z "$vendor_dir" ]]; then
   exit 1
 fi
 
-umask 077
-staging="$(mktemp -d "${TMPDIR:-/tmp}/infra-kit-sync.XXXXXX")"
-trap 'rm -rf -- "$staging"' EXIT
+mkdir -p "$(dirname "$vendor_dir")"
+vendor_abs="$(cd "$(dirname "$vendor_dir")" && pwd)/$(basename "$vendor_dir")"
+script_abs="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-if [[ -n "$source_path" ]]; then
-  cp -R "${source_path%/}/hack" "$staging/hack"
-else
-  if ! command -v curl >/dev/null 2>&1; then
-    echo "error: curl is not installed" >&2
-    exit 1
-  fi
-  tarball="${staging}/infra-kit.tar.gz"
-  url="https://github.com/${repo}/archive/refs/tags/${version}.tar.gz"
-  if ! curl -fsSL --proto '=https' --tlsv1.2 "$url" -o "$tarball"; then
-    echo "error: could not download ${url}" >&2
-    exit 1
-  fi
-  tar -xzf "$tarball" -C "$staging"
-  extracted="$(find "$staging" -maxdepth 1 -type d -name 'infra-kit-*' | head -1)"
-  if [[ -z "$extracted" || ! -d "$extracted/hack" ]]; then
-    echo "error: ${version} does not contain a hack/ directory" >&2
-    exit 1
-  fi
-  mv "$extracted/hack" "$staging/hack"
+# The vendored copy of this script lives inside the directory it is about to
+# replace. Bash reads a script incrementally, so deleting the file mid-run
+# truncates execution — re-exec from a copy outside the blast radius first.
+if [[ "${INFRA_KIT_SYNC_REEXEC:-}" != "1" && "$script_abs" == "$vendor_abs"/* ]]; then
+  relay="$(mktemp -d "${TMPDIR:-/tmp}/infra-kit-sync-self.XXXXXX")"
+  trap 'rm -rf -- "$relay"' EXIT
+  cp -R "$script_abs/." "$relay/"
+  INFRA_KIT_SYNC_REEXEC=1 exec bash "$relay/$(basename "${BASH_SOURCE[0]}")" "${args[@]}"
 fi
 
-digest="$(infra_kit_tree_digest "$staging/hack")"
+SCRIPT_DIR="$script_abs"
+# shellcheck source=digest.sh
+source "${SCRIPT_DIR}/digest.sh"
 
-# Replace atomically-ish: remove then move, so a partial copy cannot be left
-# behind looking like a valid vendor directory.
-rm -rf -- "$vendor_dir"
-mkdir -p "$(dirname "$vendor_dir")"
-mv "$staging/hack" "$vendor_dir"
-chmod -R u+rwX,go-w "$vendor_dir"
-find "$vendor_dir" -name '*.sh' -exec chmod +x {} +
+umask 077
+staging="$(mktemp -d "${TMPDIR:-/tmp}/infra-kit-sync.XXXXXX")"
+cleanup_staging() { rm -rf -- "$staging"; }
+trap cleanup_staging EXIT
 
-lock="$(dirname "$vendor_dir")/infra-kit.lock"
+extracted=""
+if [[ -n "$source_path" ]]; then
+  extracted="${source_path%/}"
+elif command -v gh >/dev/null 2>&1; then
+  # gh carries credentials, so this works while the repository is private.
+  if ! gh api "repos/${repo}/tarball/${version}" > "${staging}/infra-kit.tar.gz" 2>"${staging}/gh.err"; then
+    echo "error: could not download ${repo}@${version} with gh" >&2
+    sed 's/^/  /' "${staging}/gh.err" >&2
+    exit 1
+  fi
+  tar -xzf "${staging}/infra-kit.tar.gz" -C "$staging"
+  extracted="$(find "$staging" -maxdepth 1 -type d -name '*infra-kit*' | head -1)"
+else
+  url="https://github.com/${repo}/archive/refs/tags/${version}.tar.gz"
+  if ! curl -fsSL --proto '=https' --tlsv1.2 "$url" -o "${staging}/infra-kit.tar.gz"; then
+    echo "error: could not download ${url}" >&2
+    echo "a private repository needs an authenticated gh; install the GitHub CLI" >&2
+    exit 1
+  fi
+  tar -xzf "${staging}/infra-kit.tar.gz" -C "$staging"
+  extracted="$(find "$staging" -maxdepth 1 -type d -name 'infra-kit-*' | head -1)"
+fi
+
+if [[ -z "$extracted" || ! -d "$extracted/hack" || ! -d "$extracted/bootstrap" ]]; then
+  echo "error: ${version} does not contain hack/ and bootstrap/" >&2
+  exit 1
+fi
+
+# Everything the consumer's Makefile invokes has to be vendored, or the
+# documented targets reference paths that were never installed.
+payload="${staging}/payload"
+mkdir -p "$payload"
+cp -R "$extracted/hack" "$payload/hack"
+cp -R "$extracted/bootstrap" "$payload/bootstrap"
+if [[ -f "$extracted/VERSION" ]]; then
+  cp "$extracted/VERSION" "$payload/VERSION"
+fi
+
+digest="$(infra_kit_tree_digest "$payload")"
+
+# Remove then move, so a partial copy cannot be left looking like a valid
+# vendor directory.
+rm -rf -- "$vendor_abs"
+mv "$payload" "$vendor_abs"
+chmod -R u+rwX,go-w "$vendor_abs"
+find "$vendor_abs" -name '*.sh' -exec chmod +x {} +
+
+lock="${vendor_abs}.lock"
 cat > "$lock" <<EOF
 # Generated by sync.sh. Verified offline by verify.sh — do not edit by hand,
 # and do not edit the vendored files: both make the digest fail.
@@ -92,6 +125,6 @@ digest = sha256:${digest}
 EOF
 chmod 644 "$lock"
 
-echo "vendored infra-kit ${version} into ${vendor_dir}"
+echo "vendored infra-kit ${version} into ${vendor_abs}"
 echo "digest sha256:${digest}"
 echo "lock ${lock}"

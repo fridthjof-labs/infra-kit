@@ -47,7 +47,11 @@ EOF
   export SOPS_AGE_KEY_FILE="$consumer/identity.txt"
   # Read by the test files that source this helper.
   # shellcheck disable=SC2034
-  hack="$consumer/infra/hack/vendor/infra-kit"
+  # Read by the test files that source this helper.
+  # shellcheck disable=SC2034
+  vendor="$consumer/infra/hack/vendor/infra-kit"
+  # shellcheck disable=SC2034
+  hack="$vendor/hack"
 }
 
 cleanup_consumer() {

@@ -1,0 +1,11 @@
+{
+  "packages": {
+    ".": {
+      "release-type": "simple",
+      "package-name": "infra-kit",
+      "version-file": "VERSION",
+      "include-component-in-tag": false,
+      "include-v-in-tag": true
+    }
+  }
+}

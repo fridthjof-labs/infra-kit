@@ -46,10 +46,10 @@ So there is no location inference at all. The consumer sets `INFRA_KIT_ROOT`,
 and a missing one is a named error rather than a confusing not-found:
 
 ```make
-INFRA_KIT       := infra/hack/vendor/infra-kit
-export INFRA_KIT_ROOT           := $(CURDIR)/infra
-export INFRA_KIT_TMP_PREFIX     := my-org
-export INFRA_KIT_VALIDATE_HOOK  := $(CURDIR)/infra/hack/validate-secrets.sh
+INFRA_KIT := infra/hack/vendor/infra-kit
+export INFRA_KIT_ROOT          := $(CURDIR)/infra
+export INFRA_KIT_TMP_PREFIX    := my-org
+export INFRA_KIT_VALIDATE_HOOK := $(CURDIR)/infra/hack/validate-secrets.sh
 ```
 
 | Variable | Meaning |
@@ -62,17 +62,37 @@ export INFRA_KIT_VALIDATE_HOOK  := $(CURDIR)/infra/hack/validate-secrets.sh
 
 ## Vendoring, version and digest
 
+`hack/`, `bootstrap/`, and `VERSION` are vendored as **one payload**, so
+everything a consumer's Makefile invokes is actually installed:
+
+```
+infra/hack/vendor/
+  infra-kit.lock          version + digest
+  infra-kit/
+    VERSION
+    hack/                 encrypt, edit, with-decrypt
+    bootstrap/            sync, verify, digest
+```
+
 `sync.sh` is the only command that touches the network. `verify.sh` is offline
-and checks the committed bytes against `infra-kit.lock`:
+and checks the committed bytes against the lock:
 
 ```bash
 # Upgrade: downloads, replaces the vendor directory, rewrites the lock.
-bash infra/hack/vendor/infra-kit/../../../bootstrap/sync.sh \
+bash infra/hack/vendor/infra-kit/bootstrap/sync.sh \
   --version v0.1.0 --vendor-dir infra/hack/vendor/infra-kit
 
 # Offline, part of `make validate`.
-bash bootstrap/verify.sh infra/hack/vendor/infra-kit
+bash infra/hack/vendor/infra-kit/bootstrap/verify.sh infra/hack/vendor/infra-kit
 ```
+
+`sync.sh` replaces the directory it is running from, so it re-execs itself from
+a copy first — bash reads a script incrementally, and deleting the file mid-run
+would truncate execution.
+
+While this repository is private, downloads go through an authenticated `gh`;
+a plain `curl` of a raw file or a tag archive returns 404. Public releases fall
+back to `curl`.
 
 The lock records both version and digest. Recording the version alone would
 let a local edit to a vendored file pass unnoticed and become renewed drift —
@@ -100,12 +120,12 @@ signal handling, and both the CI key and the local key-file path. They run the
 scripts from a vendored directory, so the relocation bug above cannot come
 back.
 
-## Not here
-
-Cloudflare OpenTofu modules. Dykkerværkstedet pins Cloudflare provider 4.52 and
-Fridthjof Labs pins 5.x, so a shared module needs that boundary resolved first.
-They arrive once two consumers demonstrably share a resource contract, not
-before.
+`tests/consumer_test.sh` builds a consumer by following
+[docs/consumer.md](docs/consumer.md) and extracts the Makefile from that file,
+so the documented adoption path is executed rather than described. It exists
+because the earlier tests all reached into this checkout, and therefore never
+noticed that the documented Makefile referenced paths `sync.sh` had not
+vendored.
 
 ## Licence
 
