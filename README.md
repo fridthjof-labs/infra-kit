@@ -7,6 +7,11 @@
 The shared operating layer for encrypted OpenTofu infrastructure, vendored into
 each consumer repository rather than copied by hand.
 
+[CI](https://github.com/fridthjof-labs/infra-kit/actions/workflows/ci.yml) ·
+[Latest release](https://github.com/fridthjof-labs/infra-kit/releases/latest) ·
+[MIT licence](LICENSE) · [Adoption guide](docs/consumer.md) ·
+[Security](SECURITY.md)
+
 Three organisations were running near-identical copies of the same SOPS
 tooling: 501 lines of shell, of which 26 differed. `encrypt.sh` was
 byte-identical. `edit-encrypted.sh` differed by one line — a temporary
