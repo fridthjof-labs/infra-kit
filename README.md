@@ -29,11 +29,11 @@ Prerequisites: Bash, [SOPS](https://github.com/getsops/sops), and
 <!-- x-release-please-start-version -->
 ```bash
 curl -fsSL --proto '=https' --tlsv1.2 \
-  https://raw.githubusercontent.com/fridthjof-labs/infra-kit/v0.1.0/bootstrap/sync.sh \
+  https://raw.githubusercontent.com/fridthjof-labs/infra-kit/v0.1.1/bootstrap/sync.sh \
   -o /tmp/infra-kit-sync.sh
 
 bash /tmp/infra-kit-sync.sh \
-  --version v0.1.0 \
+  --version v0.1.1 \
   --vendor-dir infra/hack/vendor/infra-kit
 ```
 <!-- x-release-please-end -->
