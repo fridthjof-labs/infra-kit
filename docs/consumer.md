@@ -88,6 +88,9 @@ sync-hack:
 `tests/consumer_test.sh` extracts that block from this file and runs it, so the
 documentation and the tested behaviour cannot drift apart.
 
+Local decryption uses an explicit `SOPS_AGE_KEY` or `SOPS_AGE_KEY_FILE` when
+set. Otherwise it uses the conventional `~/.config/sops/age/keys.txt`.
+
 ## 3. Write the two adapters
 
 Everything repository-specific stays yours.

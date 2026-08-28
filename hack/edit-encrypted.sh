@@ -26,7 +26,7 @@ Environment:
   SOPS_EDITOR              Editor command. Falls back to EDITOR, then vi.
   SOPS_AGE_KEY             Explicit age identity, primarily for CI or recovery.
   SOPS_AGE_KEY_FILE        Explicit age identity file.
-                           Default: ~/.config/sops/age/secure-enclave.txt
+                           Default: ~/.config/sops/age/keys.txt.
 EOF
 }
 
@@ -121,7 +121,7 @@ fi
 # --filename-override keeps the .sops.yaml creation_rules matching on the real
 # destination name rather than the temporary one.
 sops --config "$sops_config" \
-  --filename-override "$encrypted_file" \
+  --filename-override "${encrypted_file%.enc}" \
   --encrypt "$plain_file" > "$encrypted_output"
 chmod 600 "$encrypted_output"
 mv "$encrypted_output" "$encrypted_file"

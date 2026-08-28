@@ -96,7 +96,7 @@ tmp_output="$(mktemp "${TMPDIR:-/tmp}/$(infra_kit_tmp_prefix)-encrypt.XXXXXX")"
 trap 'rm -f "$tmp_output"' EXIT
 
 sops --config "$sops_config" \
-  --filename-override "$output_file" \
+  --filename-override "$input_file" \
   --encrypt "$input_file" > "$tmp_output"
 chmod 600 "$tmp_output"
 mv "$tmp_output" "$output_file"

@@ -17,7 +17,7 @@ age-keygen -o "$consumer/identity.txt" 2>/dev/null
 recipient="$(grep -o 'age1[0-9a-z]*' "$consumer/identity.txt" | head -1)"
 cat > "$consumer/infra/.sops.yaml" <<EOF
 creation_rules:
-  - path_regex: \.(tfvars|hcl)(\.enc)?\$
+  - path_regex: \.(tfvars|hcl)\$
     age: ${recipient}
 EOF
 
