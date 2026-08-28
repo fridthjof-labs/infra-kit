@@ -22,7 +22,7 @@ Plaintext is streamed to the command and never written to a regular file.
 
 Local key selection:
   1. SOPS_AGE_KEY or SOPS_AGE_KEY_FILE, when explicitly set
-  2. ~/.config/sops/age/secure-enclave.txt (Touch ID)
+  2. ~/.config/sops/age/keys.txt
 EOF
 }
 

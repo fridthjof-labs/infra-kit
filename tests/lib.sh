@@ -38,7 +38,7 @@ make_consumer() {
 
   cat > "$consumer/infra/.sops.yaml" <<EOF
 creation_rules:
-  - path_regex: \.(tfvars|hcl)(\.enc)?\$
+  - path_regex: \.(tfvars|hcl)\$
     age: ${recipient}
 EOF
 

@@ -63,7 +63,16 @@ pass "decrypts with an inline key and keeps it out of the command"
 
 out="$("$hack/with-decrypt.sh" TFVARS="$enc" -- bash -c 'cat "$TFVARS"')"
 [[ "$out" == *"$token"* ]] || fail "SOPS_AGE_KEY_FILE (local mode) did not decrypt"
-pass "decrypts with a key file, as the Secure Enclave identity does"
+pass "decrypts with an explicit key file"
+
+identity="$SOPS_AGE_KEY_FILE"
+test_home="$consumer/home"
+mkdir -p "$test_home/.config/sops/age"
+cp "$identity" "$test_home/.config/sops/age/keys.txt"
+out="$(HOME="$test_home" SOPS_AGE_KEY_FILE="" "$hack/with-decrypt.sh" \
+  TFVARS="$enc" -- bash -c 'cat "$TFVARS"')"
+[[ "$out" == *"$token"* ]] || fail "the conventional SOPS age key did not decrypt"
+pass "discovers the conventional SOPS age key"
 
 if "$hack/with-decrypt.sh" 'BAD NAME'="$enc" -- true 2>/dev/null; then
   fail "an invalid environment variable name was accepted"

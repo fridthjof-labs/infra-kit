@@ -46,9 +46,9 @@ infra_kit_tmp_prefix() {
 # Selects the age identity and sets INFRA_KIT_AGE_KEY / INFRA_KIT_AGE_KEY_FILE.
 # Exactly one is non-empty.
 #
-# Order: an explicit key, then an explicit key file, then the local Secure
-# Enclave identity. SOPS_AGE_KEY is read into a variable and unset so it does
-# not reach any child process that does not need it.
+# Order: an explicit key, an explicit key file, then the conventional SOPS age
+# key file. SOPS_AGE_KEY is read into a variable and unset so it does not reach
+# any child process that does not need it.
 infra_kit_resolve_age_identity() {
   INFRA_KIT_AGE_KEY="${SOPS_AGE_KEY:-}"
   INFRA_KIT_AGE_KEY_FILE=""
@@ -58,12 +58,12 @@ infra_kit_resolve_age_identity() {
   elif [[ -n "${SOPS_AGE_KEY_FILE:-}" ]]; then
     INFRA_KIT_AGE_KEY_FILE="$SOPS_AGE_KEY_FILE"
   else
-    INFRA_KIT_AGE_KEY_FILE="${INFRA_KIT_AGE_KEY_DEFAULT:-$HOME/.config/sops/age/secure-enclave.txt}"
+    INFRA_KIT_AGE_KEY_FILE="$HOME/.config/sops/age/keys.txt"
   fi
 
   if [[ -z "$INFRA_KIT_AGE_KEY" && ! -f "$INFRA_KIT_AGE_KEY_FILE" ]]; then
     echo "error: age identity not found: $INFRA_KIT_AGE_KEY_FILE" >&2
-    echo "set SOPS_AGE_KEY_FILE or configure the Secure Enclave identity" >&2
+    echo "set SOPS_AGE_KEY_FILE or configure ~/.config/sops/age/keys.txt" >&2
     exit 1
   fi
 }
