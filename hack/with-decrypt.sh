@@ -20,6 +20,16 @@ Example:
 Each NAME becomes an environment variable pointing to a temporary FIFO.
 Plaintext is streamed to the command and never written to a regular file.
 
+A FIFO carries its content exactly once. A second read of the same NAME blocks
+forever -- there is no reader to unblock it and no timeout -- so a command that
+needs a secret more than once must buffer it itself:
+
+  with-decrypt.sh TFVARS=prod.enc -- \
+    bash -c 'buf="$(cat "$TFVARS")"; grep -c . <<<"$buf"; wc -l <<<"$buf"'
+
+Not reading a FIFO at all is a failure too: the command exits non-zero even if
+it otherwise succeeded, because the secret it asked for went unused.
+
 Local key selection:
   1. SOPS_AGE_KEY or SOPS_AGE_KEY_FILE, when explicitly set
   2. ~/.config/sops/age/secure-enclave.txt (macOS Touch ID)

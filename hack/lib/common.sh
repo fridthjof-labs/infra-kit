@@ -108,3 +108,35 @@ infra_kit_sops_decrypt() {
       sops --decrypt "$encrypted"
   fi
 }
+
+# The schema of a secrets file is the consumer's business, not this toolkit's,
+# so a consumer-supplied hook is the only thing that knows what "valid" means.
+# Every path that encrypts plaintext runs it: a first encryption is exactly
+# when a missing required key is cheapest to catch.
+infra_kit_run_validate_hook() {
+  local plaintext="$1"
+  local on_failure="$2"
+  local hook="${INFRA_KIT_VALIDATE_HOOK:-}"
+
+  [[ -n "$hook" ]] || return 0
+
+  if [[ ! -x "$hook" ]]; then
+    echo "error: INFRA_KIT_VALIDATE_HOOK is not executable: $hook" >&2
+    exit 1
+  fi
+  if ! "$hook" "$plaintext"; then
+    echo "error: validation failed; $on_failure" >&2
+    exit 1
+  fi
+}
+
+# Content digest, used to tell a real edit from a save that changed nothing.
+# Hashing rather than keeping a second copy: the plaintext should exist in
+# exactly one place for exactly as long as the editor needs it.
+infra_kit_digest() {
+  if command -v shasum >/dev/null 2>&1; then
+    shasum -a 256 "$1" | cut -d' ' -f1
+  else
+    sha256sum "$1" | cut -d' ' -f1
+  fi
+}

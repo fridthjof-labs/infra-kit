@@ -26,6 +26,10 @@ local age identity file — encryption only ever needs the recipient's public ke
 Environment:
   INFRA_KIT_ROOT             Directory holding .sops.yaml. Required.
   INFRA_KIT_DEFAULT_SECRETS  Default input file name.
+  INFRA_KIT_VALIDATE_HOOK    Executable run against the plaintext before it is
+                             encrypted. Non-zero aborts, leaving both the input
+                             and any existing .enc untouched. Repository-specific,
+                             so the consumer supplies it.
   KEEP_PLAINTEXT_SECRETS     Set to 1 to keep the plaintext input.
 EOF
 }
@@ -88,6 +92,10 @@ if [[ ! -f "$input_file" ]]; then
   echo "error: input file not found: $input_file" >&2
   exit 1
 fi
+
+# Before anything is written or removed: a rejected input must leave both the
+# plaintext and any existing .enc exactly as they were.
+infra_kit_run_validate_hook "$input_file" "nothing was encrypted"
 
 # Encrypt to a temporary file first: a failed sops run must not leave a
 # truncated .enc where a valid one used to be.
