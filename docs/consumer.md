@@ -7,11 +7,11 @@ Nothing is installed yet, so fetch `sync.sh` once by hand:
 <!-- x-release-please-start-version -->
 ```bash
 curl -fsSL --proto '=https' --tlsv1.2 \
-  https://raw.githubusercontent.com/fridthjof-labs/infra-kit/v0.2.0/bootstrap/sync.sh \
+  https://raw.githubusercontent.com/fridthjof-labs/infra-kit/v0.2.1/bootstrap/sync.sh \
   -o /tmp/infra-kit-sync.sh
 
 bash /tmp/infra-kit-sync.sh \
-  --version v0.2.0 \
+  --version v0.2.1 \
   --vendor-dir infra/hack/vendor/infra-kit
 ```
 
@@ -28,7 +28,7 @@ If you are adopting a private fork instead, `sync.sh` falls back to an
 authenticated `gh`, and the manual fetch above becomes:
 
 ```bash
-gh api repos/YOUR-ORG/infra-kit/contents/bootstrap/sync.sh?ref=v0.2.0 \
+gh api repos/YOUR-ORG/infra-kit/contents/bootstrap/sync.sh?ref=v0.2.1 \
   --jq .content | base64 -d > /tmp/infra-kit-sync.sh
 ```
 <!-- x-release-please-end -->
@@ -56,7 +56,7 @@ infra/
 <!-- consumer-makefile:begin -->
 ```make
 INFRA_KIT         := infra/hack/vendor/infra-kit
-INFRA_KIT_VERSION := v0.2.0
+INFRA_KIT_VERSION := v0.2.1
 
 export INFRA_KIT_ROOT          := $(CURDIR)/infra
 export INFRA_KIT_TMP_PREFIX    := my-org

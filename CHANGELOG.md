@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/fridthjof-labs/infra-kit/compare/v0.2.0...v0.2.1) (2026-08-29)
+
+
+### Bug Fixes
+
+* **ci:** cut the release tag after a Tidebot merge ([#10](https://github.com/fridthjof-labs/infra-kit/issues/10)) ([232fb66](https://github.com/fridthjof-labs/infra-kit/commit/232fb66fc2f37dfa82039f4dc24ffd902866ff37))
+
 ## [0.2.0](https://github.com/fridthjof-labs/infra-kit/compare/v0.1.1...v0.2.0) (2026-08-29)
 
 
