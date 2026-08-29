@@ -65,14 +65,25 @@ out="$("$hack/with-decrypt.sh" TFVARS="$enc" -- bash -c 'cat "$TFVARS"')"
 [[ "$out" == *"$token"* ]] || fail "SOPS_AGE_KEY_FILE (local mode) did not decrypt"
 pass "decrypts with an explicit key file"
 
-identity="$SOPS_AGE_KEY_FILE"
 test_home="$consumer/home"
 mkdir -p "$test_home/.config/sops/age"
-cp "$identity" "$test_home/.config/sops/age/secure-enclave.txt"
+case "$(uname -s)" in
+  Darwin*)
+    identity_file="secure-enclave.txt"
+    ;;
+  Linux*)
+    identity_file="fido2.txt"
+    ;;
+  *)
+    identity_file="keys.txt"
+    ;;
+esac
+
+cp "$SOPS_AGE_KEY_FILE" "$test_home/.config/sops/age/$identity_file"
 out="$(HOME="$test_home" SOPS_AGE_KEY_FILE="" "$hack/with-decrypt.sh" \
   TFVARS="$enc" -- bash -c 'cat "$TFVARS"')"
-[[ "$out" == *"$token"* ]] || fail "the secure-enclave SOPS age key did not decrypt"
-pass "discovers the conventional SOPS age key"
+[[ "$out" == *"$token"* ]] || fail "the platform-default SOPS age key did not decrypt"
+pass "discovers the conventional platform default SOPS age key"
 
 if "$hack/with-decrypt.sh" 'BAD NAME'="$enc" -- true 2>/dev/null; then
   fail "an invalid environment variable name was accepted"

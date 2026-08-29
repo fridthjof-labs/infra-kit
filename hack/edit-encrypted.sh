@@ -26,7 +26,8 @@ Environment:
   SOPS_EDITOR              Editor command. Falls back to EDITOR, then vi.
   SOPS_AGE_KEY             Explicit age identity, primarily for CI or recovery.
   SOPS_AGE_KEY_FILE        Explicit age identity file.
-                           Default: ~/.config/sops/age/secure-enclave.txt.
+                           Default: ~/.config/sops/age/secure-enclave.txt on macOS,
+                           ~/.config/sops/age/fido2.txt on Linux.
 EOF
 }
 

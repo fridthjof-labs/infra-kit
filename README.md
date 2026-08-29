@@ -23,49 +23,15 @@ It does three things:
 ## Install
 
 Prerequisites: Bash, [SOPS](https://github.com/getsops/sops), and
-[age](https://github.com/FiloSottile/age).
+[age](https://github.com/FiloSottile/age). Use this bootstrap guide:
 
-### Ultra-short setup
+- [docs/encryption-bootstrap.md](/docs/encryption-bootstrap.md)
 
-macOS (Touch ID / secure enclave):
-
-```bash
-brew install age age-plugin-se sops
-mkdir -p ~/.config/sops/age
-age-plugin-se keygen --access-control=any-biometry -o ~/.config/sops/age/secure-enclave.txt
-```
-
-Linux / no secure enclave:
+If your key file is not the default above, set:
 
 ```bash
-age-keygen -o ~/.config/sops/age/keys.txt
-export SOPS_AGE_KEY_FILE="$HOME/.config/sops/age/keys.txt"
-```
-
-Linux (FIDO2 token / YubiKey UX):
-
-```bash
-# install age + sops + age-plugin-yubikey and ensure pcscd is running
-# Debian/Ubuntu:
-#   sudo apt-get install -y age sops age-plugin-yubikey pcscd
-mkdir -p ~/.config/sops/age
-age-plugin-yubikey --generate --slot 1 > ~/.config/sops/age/fido2.txt
-# choose policy flags if you want stricter auth:
-#   age-plugin-yubikey --generate --slot 1 --touch-policy always --pin-policy once > ~/.config/sops/age/fido2.txt
-chmod 600 ~/.config/sops/age/fido2.txt
 export SOPS_AGE_KEY_FILE="$HOME/.config/sops/age/fido2.txt"
 ```
-
-Use the age recipient shown in the device output (or via `age-plugin-yubikey --list`)
-inside `.sops.yaml`, then run `with-decrypt.sh`/`edit-encrypted.sh` normally.
-
-Put your age identity in the standard
-`~/.config/sops/age/secure-enclave.txt` (Touch ID/secure enclave), or set
-`SOPS_AGE_KEY_FILE` explicitly.
-
-`age-plugin-se` / secure-enclave decryption is macOS-only; on Linux use either
-`~/.config/sops/age/keys.txt` (normal age key) or a FIDO2 identity file and
-set `SOPS_AGE_KEY_FILE` explicitly.
 
 <!-- x-release-please-start-version -->
 ```bash
