@@ -54,3 +54,32 @@ mv "$INFRA_KIT_ROOT/.sops.yaml.bak" "$INFRA_KIT_ROOT/.sops.yaml"
 [[ "$(cat "$INFRA_KIT_ROOT/backend.prod.hcl.enc")" == "$before" ]] ||
   fail "a failed encrypt overwrote an existing .enc"
 pass "a failed encrypt leaves the existing .enc intact"
+
+# The consumer Makefile in docs/consumer.md exports INFRA_KIT_VALIDATE_HOOK for
+# every target, so encrypt.sh silently ignoring it was a safety control that
+# looked wired and was not.
+hook="$consumer/validate.sh"
+printf '#!/usr/bin/env bash\nexit 1\n' > "$hook"
+chmod +x "$hook"
+printf 'incomplete = "1"\n' > "$INFRA_KIT_ROOT/hooked.hcl"
+if INFRA_KIT_VALIDATE_HOOK="$hook" "$hack/encrypt.sh" hooked.hcl >/dev/null 2>&1; then
+  fail "a rejecting validation hook reported success"
+fi
+[[ ! -f "$INFRA_KIT_ROOT/hooked.hcl.enc" ]] || fail "a rejected input was still encrypted"
+[[ -f "$INFRA_KIT_ROOT/hooked.hcl" ]] || fail "a rejected input was consumed anyway"
+pass "a rejecting validation hook encrypts nothing and keeps the input"
+
+# "$1" is the hook's own argument and must reach it unexpanded.
+# shellcheck disable=SC2016
+printf '#!/usr/bin/env bash\ngrep -q incomplete "$1"\n' > "$hook"
+chmod +x "$hook"
+INFRA_KIT_VALIDATE_HOOK="$hook" "$hack/encrypt.sh" hooked.hcl >/dev/null
+[[ -f "$INFRA_KIT_ROOT/hooked.hcl.enc" ]] || fail "an accepted input was not encrypted"
+pass "an accepting validation hook allows the encryption"
+
+printf 'more = "1"\n' > "$INFRA_KIT_ROOT/unreadable.hcl"
+error_text="$(INFRA_KIT_VALIDATE_HOOK="$consumer/not-a-hook" \
+  "$hack/encrypt.sh" unreadable.hcl 2>&1 || true)"
+[[ "$error_text" == *"not executable"* ]] ||
+  fail "an unusable hook produced an unhelpful error: $error_text"
+pass "names an INFRA_KIT_VALIDATE_HOOK that cannot be run"

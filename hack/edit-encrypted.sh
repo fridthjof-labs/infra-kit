@@ -100,6 +100,7 @@ trap 'exit 129' HUP
 infra_kit_sops_decrypt "$sops_config_home" "$encrypted_file" > "$plain_file"
 chmod 600 "$plain_file"
 unset INFRA_KIT_AGE_KEY
+digest_before="$(infra_kit_digest "$plain_file")"
 
 editor="${SOPS_EDITOR:-${EDITOR:-vi}}"
 if ! TMPDIR="$tmp_dir" /bin/sh -c "$editor \"\$1\"" sh "$plain_file"; then
@@ -107,17 +108,17 @@ if ! TMPDIR="$tmp_dir" /bin/sh -c "$editor \"\$1\"" sh "$plain_file"; then
   exit 1
 fi
 
-# The schema of a secrets file is the consumer's business, not this toolkit's.
-if [[ -n "${INFRA_KIT_VALIDATE_HOOK:-}" ]]; then
-  if [[ ! -x "$INFRA_KIT_VALIDATE_HOOK" ]]; then
-    echo "error: INFRA_KIT_VALIDATE_HOOK is not executable: $INFRA_KIT_VALIDATE_HOOK" >&2
-    exit 1
-  fi
-  if ! "$INFRA_KIT_VALIDATE_HOOK" "$plain_file"; then
-    echo "error: validation failed; encrypted file was not changed" >&2
-    exit 1
-  fi
+# sops mints a fresh data key on every encryption, so re-encrypting unchanged
+# plaintext still rewrites the ciphertext. That makes a lost paste, a save that
+# changed nothing, and a correct edit indistinguishable -- in this script's
+# output and in `git diff` alike. Say what happened instead.
+if [[ "$(infra_kit_digest "$plain_file")" == "$digest_before" ]]; then
+  echo "unchanged: $encrypted_file"
+  echo "temporary plaintext removed"
+  exit 0
 fi
+
+infra_kit_run_validate_hook "$plain_file" "encrypted file was not changed"
 
 # --filename-override keeps the .sops.yaml creation_rules matching on the real
 # destination name rather than the temporary one.

@@ -115,8 +115,17 @@ if ((${#missing[@]})); then
 fi
 ```
 
-`edit-encrypted.sh` runs it before re-encrypting; a non-zero exit aborts and
-leaves the encrypted file untouched.
+Both `encrypt.sh` and `edit-encrypted.sh` run it before writing; a non-zero
+exit aborts and leaves the input and any existing encrypted file untouched. A
+first encryption is where a missing required key is cheapest to catch, so the
+hook is not an edit-only guard.
+
+`edit-encrypted.sh` compares the plaintext before and after your editor. A save
+that changed nothing prints `unchanged:` and does not re-encrypt — sops mints a
+fresh data key every time, so an unconditional rewrite would change the
+ciphertext and leave a dropped paste looking exactly like a real edit, in the
+command output and in `git diff` alike. Nothing being written also means there
+is nothing for the hook to validate, so it does not run on that path.
 
 **Tofu execution** — roots, backends, state backup, and whether the repository
 is single-root or multi-root are yours. `with-decrypt.sh` is the seam:

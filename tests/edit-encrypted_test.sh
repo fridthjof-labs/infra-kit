@@ -56,8 +56,29 @@ pass "a rejecting validation hook leaves the encrypted file untouched"
 
 printf '#!/usr/bin/env bash\ngrep -q -- "-edited" "$1"\n' > "$hook"
 chmod +x "$hook"
-INFRA_KIT_VALIDATE_HOOK="$hook" SOPS_EDITOR="true" "$hack/edit-encrypted.sh" >/dev/null
+before="$(cat "$enc")"
+INFRA_KIT_VALIDATE_HOOK="$hook" SOPS_EDITOR="sed -i.bak s/-edited/-edited2/" \
+  "$hack/edit-encrypted.sh" >/dev/null
+[[ "$(cat "$enc")" != "$before" ]] || fail "an accepted edit did not reach the file"
+[[ "$(sops --decrypt "$enc")" == *"$token-edited2"* ]] ||
+  fail "an accepted edit did not round-trip"
 pass "an accepting validation hook allows the write"
+
+# sops re-keys on every encryption, so an unconditional re-encrypt would change
+# the ciphertext here and make a dropped paste look exactly like a real edit.
+before="$(cat "$enc")"
+output="$(SOPS_EDITOR="true" "$hack/edit-encrypted.sh")"
+[[ "$(cat "$enc")" == "$before" ]] || fail "a no-op edit rewrote the encrypted file"
+[[ "$output" == *"unchanged"* ]] || fail "a no-op edit did not say so: $output"
+pass "a save that changed nothing leaves the ciphertext byte-identical"
+
+# The hook guards what gets written. With nothing to write there is nothing to
+# guard, and a rejecting hook must not fail a save the user did not make.
+printf '#!/usr/bin/env bash\nexit 1\n' > "$hook"
+chmod +x "$hook"
+INFRA_KIT_VALIDATE_HOOK="$hook" SOPS_EDITOR="true" "$hack/edit-encrypted.sh" >/dev/null ||
+  fail "a no-op edit was rejected by a hook that had nothing to validate"
+pass "a no-op edit skips the validation hook"
 
 # An interrupted edit is the case that would otherwise strand plaintext.
 SOPS_EDITOR="sleep 30" "$hack/edit-encrypted.sh" >/dev/null 2>&1 &
