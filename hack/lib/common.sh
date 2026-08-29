@@ -43,11 +43,25 @@ infra_kit_tmp_prefix() {
   printf '%s' "${INFRA_KIT_TMP_PREFIX:-infra-kit}"
 }
 
+infra_kit_default_age_key_file() {
+  case "${INFRA_KIT_PLATFORM:-$(uname -s)}" in
+    Darwin*)
+      printf '%s' "$HOME/.config/sops/age/secure-enclave.txt"
+      ;;
+    Linux*)
+      printf '%s' "$HOME/.config/sops/age/fido2.txt"
+      ;;
+    *)
+      printf '%s' "$HOME/.config/sops/age/keys.txt"
+      ;;
+  esac
+}
+
 # Selects the age identity and sets INFRA_KIT_AGE_KEY / INFRA_KIT_AGE_KEY_FILE.
 # Exactly one is non-empty.
 #
-# Order: an explicit key, an explicit key file, then the conventional SOPS age
-# key file. SOPS_AGE_KEY is read into a variable and unset so it does not reach
+# Order: an explicit key, an explicit key file, then the platform default file.
+# SOPS_AGE_KEY is read into a variable and unset so it does not reach
 # any child process that does not need it.
 infra_kit_resolve_age_identity() {
   INFRA_KIT_AGE_KEY="${SOPS_AGE_KEY:-}"
@@ -58,12 +72,22 @@ infra_kit_resolve_age_identity() {
   elif [[ -n "${SOPS_AGE_KEY_FILE:-}" ]]; then
     INFRA_KIT_AGE_KEY_FILE="$SOPS_AGE_KEY_FILE"
   else
-    INFRA_KIT_AGE_KEY_FILE="$HOME/.config/sops/age/keys.txt"
+    INFRA_KIT_AGE_KEY_FILE="$(infra_kit_default_age_key_file)"
   fi
 
   if [[ -z "$INFRA_KIT_AGE_KEY" && ! -f "$INFRA_KIT_AGE_KEY_FILE" ]]; then
     echo "error: age identity not found: $INFRA_KIT_AGE_KEY_FILE" >&2
-    echo "set SOPS_AGE_KEY_FILE or configure ~/.config/sops/age/keys.txt" >&2
+    case "${INFRA_KIT_PLATFORM:-$(uname -s)}" in
+      Darwin*)
+        echo "set SOPS_AGE_KEY_FILE or create a Secure Enclave identity file" >&2
+        ;;
+      Linux*)
+        echo "set SOPS_AGE_KEY_FILE or create a FIDO2 identity file" >&2
+        ;;
+      *)
+        echo "set SOPS_AGE_KEY_FILE to an age identity file" >&2
+        ;;
+    esac
     exit 1
   fi
 }

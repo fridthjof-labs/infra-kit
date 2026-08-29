@@ -23,8 +23,15 @@ It does three things:
 ## Install
 
 Prerequisites: Bash, [SOPS](https://github.com/getsops/sops), and
-[age](https://github.com/FiloSottile/age). Put your age identity in the standard
-`~/.config/sops/age/keys.txt`, or set `SOPS_AGE_KEY_FILE` explicitly.
+[age](https://github.com/FiloSottile/age). Use this bootstrap guide:
+
+- [docs/encryption-bootstrap.md](/docs/encryption-bootstrap.md)
+
+If your key file is not the default above, set:
+
+```bash
+export SOPS_AGE_KEY_FILE="$HOME/.config/sops/age/fido2.txt"
+```
 
 <!-- x-release-please-start-version -->
 ```bash
