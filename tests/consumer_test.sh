@@ -11,7 +11,12 @@ echo "consumer adoption"
 # from upstream, which is why they never noticed that the documented Makefile
 # referenced paths sync.sh had not vendored.
 consumer="$(mktemp -d "${TMPDIR:-/tmp}/infra-kit-consumer.XXXXXX")"
-mkdir -p "$consumer/infra/hack"
+mkdir -p "$consumer/infra/hack" "$consumer/infra/site"
+
+# The documented validate scans the git tree and validates every root.
+git -C "$consumer" init -q
+echo 'identity.txt' > "$consumer/.gitignore"
+echo '# site' > "$consumer/infra/site/main.tf"
 
 age-keygen -o "$consumer/identity.txt" 2>/dev/null
 recipient="$(grep -o 'age1[0-9a-z]*' "$consumer/identity.txt" | head -1)"
