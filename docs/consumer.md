@@ -89,7 +89,7 @@ sync-hack:
 documentation and the tested behaviour cannot drift apart.
 
 Local decryption uses an explicit `SOPS_AGE_KEY` or `SOPS_AGE_KEY_FILE` when
-set. Otherwise it uses the conventional `~/.config/sops/age/keys.txt`.
+set. Otherwise it uses the conventional `~/.config/sops/age/secure-enclave.txt`.
 
 ## 3. Write the two adapters
 

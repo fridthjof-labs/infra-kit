@@ -58,12 +58,12 @@ infra_kit_resolve_age_identity() {
   elif [[ -n "${SOPS_AGE_KEY_FILE:-}" ]]; then
     INFRA_KIT_AGE_KEY_FILE="$SOPS_AGE_KEY_FILE"
   else
-    INFRA_KIT_AGE_KEY_FILE="$HOME/.config/sops/age/keys.txt"
+    INFRA_KIT_AGE_KEY_FILE="$HOME/.config/sops/age/secure-enclave.txt"
   fi
 
   if [[ -z "$INFRA_KIT_AGE_KEY" && ! -f "$INFRA_KIT_AGE_KEY_FILE" ]]; then
     echo "error: age identity not found: $INFRA_KIT_AGE_KEY_FILE" >&2
-    echo "set SOPS_AGE_KEY_FILE or configure ~/.config/sops/age/keys.txt" >&2
+    echo "set SOPS_AGE_KEY_FILE or configure ~/.config/sops/age/secure-enclave.txt" >&2
     exit 1
   fi
 }

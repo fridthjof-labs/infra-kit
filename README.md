@@ -24,7 +24,8 @@ It does three things:
 
 Prerequisites: Bash, [SOPS](https://github.com/getsops/sops), and
 [age](https://github.com/FiloSottile/age). Put your age identity in the standard
-`~/.config/sops/age/keys.txt`, or set `SOPS_AGE_KEY_FILE` explicitly.
+`~/.config/sops/age/secure-enclave.txt` (Touch ID/secure enclave), or set
+`SOPS_AGE_KEY_FILE` explicitly.
 
 <!-- x-release-please-start-version -->
 ```bash

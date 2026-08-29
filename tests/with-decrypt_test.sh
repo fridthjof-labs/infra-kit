@@ -68,10 +68,10 @@ pass "decrypts with an explicit key file"
 identity="$SOPS_AGE_KEY_FILE"
 test_home="$consumer/home"
 mkdir -p "$test_home/.config/sops/age"
-cp "$identity" "$test_home/.config/sops/age/keys.txt"
+cp "$identity" "$test_home/.config/sops/age/secure-enclave.txt"
 out="$(HOME="$test_home" SOPS_AGE_KEY_FILE="" "$hack/with-decrypt.sh" \
   TFVARS="$enc" -- bash -c 'cat "$TFVARS"')"
-[[ "$out" == *"$token"* ]] || fail "the conventional SOPS age key did not decrypt"
+[[ "$out" == *"$token"* ]] || fail "the secure-enclave SOPS age key did not decrypt"
 pass "discovers the conventional SOPS age key"
 
 if "$hack/with-decrypt.sh" 'BAD NAME'="$enc" -- true 2>/dev/null; then
