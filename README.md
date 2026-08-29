@@ -12,13 +12,28 @@ Small, auditable shell tools for using SOPS-encrypted secrets with OpenTofu.
 Infra-kit is vendored into each infrastructure repository, pinned by version and
 digest, and runs offline after installation.
 
-It does three things:
+It owns two layers:
+
+Encryption —
 
 - `encrypt.sh` encrypts a plaintext file and removes the plaintext.
 - `edit-encrypted.sh` opens a mode-0600 temporary file, validates it, encrypts
   it back, and removes the temporary file.
 - `with-decrypt.sh` streams plaintext to a command through a FIFO, so plan and
   apply do not need a plaintext secrets file.
+
+Execution ([the OpenTofu standard](/docs/tofu-standard.md)) —
+
+- `tofu-run.sh` is the one path to production state: it sources the encrypted
+  operations file through a FIFO, derives each root's state key, initializes
+  the locked backend, snapshots state before apply, and streams root secrets
+  as a one-use `-var-file`.
+- `tofu-validate.sh` and `scan-repo.sh` are the offline gate: per-root fmt,
+  lock-file init, and validate, plus a scan for plaintext secrets, keys, and
+  state in the checkout.
+- `bootstrap/scaffold.sh` writes the whole canonical consumer layout —
+  Makefile, sops rules, first root, gated CI workflow — into an empty
+  repository, so every new IaC repository starts identical.
 
 ## Install
 
@@ -100,8 +115,9 @@ plaintext validation hook, upgrades, and FIFO-based OpenTofu execution.
 - Vendored files are reviewable and verified offline against their committed
   digest.
 
-Repository-specific secret schemas, OpenTofu roots, state handling, and backup
-policy remain in the consumer repository.
+Repository-specific secret schemas, the OpenTofu roots themselves, provider
+choices, and the `.sops.yaml` recipient set remain in the consumer repository;
+how Tofu runs against state is the kit's ([docs/tofu-standard.md](/docs/tofu-standard.md)).
 
 ## Development
 

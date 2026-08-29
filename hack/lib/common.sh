@@ -94,18 +94,27 @@ infra_kit_resolve_age_identity() {
 
 # Run sops with the resolved identity and an isolated XDG home, so a user's
 # own sops config cannot change how a decrypt behaves.
+#
+# Encryption overrides the filename so format inference and creation rules see
+# the plaintext name; decryption has to be symmetric, or a format sops knows
+# natively (ops.env) encrypts as dotenv and then fails to parse as JSON when
+# the .enc suffix hides the format again.
 infra_kit_sops_decrypt() {
   local xdg_home="$1"
   local encrypted="$2"
+  local override="$encrypted"
+  if [[ "$override" == *.enc ]]; then
+    override="${override%.enc}"
+  fi
 
   if [[ -n "$INFRA_KIT_AGE_KEY" ]]; then
     XDG_CONFIG_HOME="$xdg_home" \
       SOPS_AGE_KEY="$INFRA_KIT_AGE_KEY" \
-      sops --decrypt "$encrypted"
+      sops --decrypt --filename-override "$override" "$encrypted"
   else
     XDG_CONFIG_HOME="$xdg_home" \
       SOPS_AGE_KEY_FILE="$INFRA_KIT_AGE_KEY_FILE" \
-      sops --decrypt "$encrypted"
+      sops --decrypt --filename-override "$override" "$encrypted"
   fi
 }
 
