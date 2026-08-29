@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.2](https://github.com/fridthjof-labs/infra-kit/compare/v0.2.1...v0.2.2) (2026-08-29)
+
+
+### Bug Fixes
+
+* **hack:** make every encrypt path report what it actually did ([#12](https://github.com/fridthjof-labs/infra-kit/issues/12)) ([8bda198](https://github.com/fridthjof-labs/infra-kit/commit/8bda198f4d2f9a131968dbe33b65d7b6a47eff7a))
+
 ## [0.2.1](https://github.com/fridthjof-labs/infra-kit/compare/v0.2.0...v0.2.1) (2026-08-29)
 
 
