@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0](https://github.com/fridthjof-labs/infra-kit/compare/v0.1.1...v0.2.0) (2026-08-29)
+
+
+### Features
+
+* default to secure-enclave age key path ([#8](https://github.com/fridthjof-labs/infra-kit/issues/8)) ([418cecf](https://github.com/fridthjof-labs/infra-kit/commit/418cecf984b9afd0cb1d4be8bbc8a081260c955f))
+
 ## [0.1.1](https://github.com/fridthjof-labs/infra-kit/compare/v0.1.0...v0.1.1) (2026-08-28)
 
 
