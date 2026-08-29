@@ -23,9 +23,30 @@ It does three things:
 ## Install
 
 Prerequisites: Bash, [SOPS](https://github.com/getsops/sops), and
-[age](https://github.com/FiloSottile/age). Put your age identity in the standard
+[age](https://github.com/FiloSottile/age).
+
+### Ultra-short setup
+
+macOS (Touch ID / secure enclave):
+
+```bash
+brew install age age-plugin-se sops
+mkdir -p ~/.config/sops/age
+age-plugin-se keygen --access-control=any-biometry -o ~/.config/sops/age/secure-enclave.txt
+```
+
+Linux / no secure enclave:
+
+```bash
+age-keygen -o ~/.config/sops/age/keys.txt
+export SOPS_AGE_KEY_FILE="$HOME/.config/sops/age/keys.txt"
+```
+
+Put your age identity in the standard
 `~/.config/sops/age/secure-enclave.txt` (Touch ID/secure enclave), or set
 `SOPS_AGE_KEY_FILE` explicitly.
+
+`age-plugin-se` / secure-enclave decryption is macOS-only; use a normal age key on Linux and pass it with `SOPS_AGE_KEY_FILE`.
 
 <!-- x-release-please-start-version -->
 ```bash
