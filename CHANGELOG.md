@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/fridthjof-labs/infra-kit/compare/v0.2.2...v0.3.0) (2026-08-29)
+
+
+### Features
+
+* own the OpenTofu execution layer and consumer scaffold ([#14](https://github.com/fridthjof-labs/infra-kit/issues/14)) ([3447ac2](https://github.com/fridthjof-labs/infra-kit/commit/3447ac255de020001bdd9339d0f2f30acbceeff6))
+
 ## [0.2.2](https://github.com/fridthjof-labs/infra-kit/compare/v0.2.1...v0.2.2) (2026-08-29)
 
 
