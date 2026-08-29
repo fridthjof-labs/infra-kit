@@ -39,3 +39,10 @@ grep -Fq 'googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307
   "$KIT_ROOT/.github/workflows/release.yml" ||
   fail "release workflow is not pinned to the proved Release Please action"
 pass "release workflow pins Release Please v5"
+
+# Tidebot merges as github-actions[bot], whose push cannot trigger this
+# workflow's `push` event. Without a second trigger the tag is not cut until
+# someone else pushes, and consumers pinning the new version get a 404.
+grep -Fq 'workflows: [Tidebot]' "$KIT_ROOT/.github/workflows/release.yml" ||
+  fail "release workflow does not run after a Tidebot merge"
+pass "release runs after Tidebot merges to main"
