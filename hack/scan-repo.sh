@@ -47,8 +47,12 @@ while IFS= read -r -d '' path; do
       failed=1
       ;;
   esac
+  # A real PEM header stands alone on its line. Anchoring keeps source that
+  # merely mentions the marker -- a .replace() that strips it, a comment in an
+  # example file -- from being reported: a scanner that cries wolf gets turned
+  # off, which is worse than not having one.
   if grep -I -n -E -e \
-    '-----BEGIN( [A-Z]+)* PRIVATE KEY-----|AGE-SECRET-KEY-1[0-9A-Z]+|AKIA[0-9A-Z]{16}|gh[pousr]_[A-Za-z0-9_]{20,}' \
+    '^[[:space:]]*-----BEGIN( [A-Z]+)* PRIVATE KEY-----[[:space:]]*$|AGE-SECRET-KEY-1[0-9A-Z]+|AKIA[0-9A-Z]{16}|gh[pousr]_[A-Za-z0-9_]{20,}' \
     -- "$path" >/dev/null; then
     echo "potential credential found in source: $path" >&2
     failed=1
