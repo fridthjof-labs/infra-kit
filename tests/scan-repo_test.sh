@@ -53,3 +53,27 @@ rm -f "$consumer/infra/backend.prod.hcl"
 sed -i.bak 's/age: .*/age: REPLACE_WITH_OPERATOR_RECIPIENT/' "$consumer/infra/.sops.yaml" &&
   rm -f "$consumer/infra/.sops.yaml.bak"
 check_fails "a scaffold placeholder left in .sops.yaml"
+
+# The placeholder case above left .sops.yaml deliberately broken; restore it
+# so the next cases fail for their own reason or not at all.
+cat > "$consumer/infra/.sops.yaml" <<EOF
+creation_rules:
+  - path_regex: \.(tfvars|hcl|env)\$
+    age: $(grep -o 'age1[0-9a-z]*' "$consumer/identity.txt" | head -1)
+EOF
+
+# A marker that is merely referenced is not a finding: app code that strips a
+# PEM header, or an example file documenting one, must not fail the scan.
+printf 'const stripped = pem.replace("-----BEGIN PRIVATE KEY-----", "");\n' \
+  > "$consumer/app.ts"
+printf '# paste the key, including the\n#   -----BEGIN PRIVATE KEY-----\n# line\n' \
+  > "$consumer/infra/secrets.example.tfvars"
+out="$(cd "$consumer" && "$scan" 2>&1)" ||
+  fail "a referenced PEM marker was reported as a credential: $out"
+pass "a referenced PEM marker is not a finding"
+
+# A pasted key still is: its header stands alone on the line.
+printf -- '-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkq\n-----END PRIVATE KEY-----\n' \
+  > "$consumer/leaked.pem.txt"
+check_fails "a pasted private key"
+rm -f "$consumer/leaked.pem.txt" "$consumer/app.ts" "$consumer/infra/secrets.example.tfvars"
