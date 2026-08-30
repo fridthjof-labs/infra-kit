@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/fridthjof-labs/infra-kit/compare/v0.3.0...v0.3.1) (2026-08-30)
+
+
+### Bug Fixes
+
+* **scan:** only report a PEM header that stands alone on its line ([#17](https://github.com/fridthjof-labs/infra-kit/issues/17)) ([532447f](https://github.com/fridthjof-labs/infra-kit/commit/532447fb1f32c24c95dae9e0454ffb7643670aa9))
+
 ## [0.3.0](https://github.com/fridthjof-labs/infra-kit/compare/v0.2.2...v0.3.0) (2026-08-29)
 
 
