@@ -80,6 +80,19 @@ INFRA_KIT_VALIDATE_HOOK="$hook" SOPS_EDITOR="true" "$hack/edit-encrypted.sh" >/d
   fail "a no-op edit was rejected by a hook that had nothing to validate"
 pass "a no-op edit skips the validation hook"
 
+# ops.env is the toolkit's file; the consumer's secrets hook must not veto it.
+printf 'INFRA_KIT_STATE_BUCKET=state-%s\n' "$token" > "$INFRA_KIT_ROOT/ops.env"
+"$hack/encrypt.sh" ops.env >/dev/null
+printf '#!/usr/bin/env bash\nexit 1\n' > "$hook"
+chmod +x "$hook"
+INFRA_KIT_VALIDATE_HOOK="$hook" SOPS_EDITOR="sed -i.bak s/state-/bucket-/" \
+  "$hack/edit-encrypted.sh" ops.env.enc >/dev/null ||
+  fail "an ops.env edit was rejected by the consumer's secrets hook"
+[[ "$(sops --decrypt --filename-override "$INFRA_KIT_ROOT/ops.env" \
+  "$INFRA_KIT_ROOT/ops.env.enc")" == *"bucket-$token"* ]] ||
+  fail "the ops.env edit did not round-trip"
+pass "editing ops.env bypasses the consumer's secrets hook"
+
 # An interrupted edit is the case that would otherwise strand plaintext.
 SOPS_EDITOR="sleep 30" "$hack/edit-encrypted.sh" >/dev/null 2>&1 &
 edit_pid=$!

@@ -29,7 +29,8 @@ Environment:
   INFRA_KIT_VALIDATE_HOOK    Executable run against the plaintext before it is
                              encrypted. Non-zero aborts, leaving both the input
                              and any existing .enc untouched. Repository-specific,
-                             so the consumer supplies it.
+                             so the consumer supplies it. Not run for ops.env,
+                             which the toolkit validates itself.
   KEEP_PLAINTEXT_SECRETS     Set to 1 to keep the plaintext input.
 EOF
 }

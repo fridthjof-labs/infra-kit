@@ -40,6 +40,11 @@ gh api repos/YOUR-ORG/infra-kit/contents/bootstrap/sync.sh?ref=v0.3.1 \
 ```
 <!-- x-release-please-end -->
 
+`INFRA_KIT_VALIDATE_HOOK` describes the roots' `secrets.auto.tfvars` files.
+Exporting it for every target is fine: `ops.env` is the kit's own file and
+never reaches the hook. Encryption only checks that it parses; the
+state-access schema is checked at run time against the merged base and overlay.
+
 The vendored payload contains everything the Makefile below invokes:
 
 ```

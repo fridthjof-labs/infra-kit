@@ -118,6 +118,17 @@ infra_kit_sops_decrypt() {
   fi
 }
 
+# The operations file is this toolkit's own schema, so the consumer's secrets
+# hook never sees it. Its state-access check needs the merged env (base plus
+# any root overlay) and stays at run time; encryption only asks that the file
+# parses as an env file.
+infra_kit_validate_ops_plaintext() {
+  if ! bash -n "$1" 2>/dev/null; then
+    echo "error: operations file does not parse as an env file" >&2
+    return 1
+  fi
+}
+
 # The schema of a secrets file is the consumer's business, not this toolkit's,
 # so a consumer-supplied hook is the only thing that knows what "valid" means.
 # Every path that encrypts plaintext runs it: a first encryption is exactly
@@ -126,6 +137,14 @@ infra_kit_run_validate_hook() {
   local plaintext="$1"
   local on_failure="$2"
   local hook="${INFRA_KIT_VALIDATE_HOOK:-}"
+
+  if [[ "$(basename "$plaintext")" == ops.env ]]; then
+    if ! infra_kit_validate_ops_plaintext "$plaintext"; then
+      echo "error: validation failed; $on_failure" >&2
+      exit 1
+    fi
+    return 0
+  fi
 
   [[ -n "$hook" ]] || return 0
 
