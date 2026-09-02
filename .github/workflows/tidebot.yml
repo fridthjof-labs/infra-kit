@@ -1,4 +1,5 @@
-# Tidebot runs inside this repository as github-actions[bot].
+# Tidebot, running inside this repository as github-actions[bot]. This is the
+# template from fridthjof-labs/tidebot, pinned to a release commit.
 name: Tidebot
 
 on:
@@ -10,27 +11,48 @@ on:
     types: [submitted]
   check_suite:
     types: [completed]
+  # `workflow_run` is only needed by the `plan` and `pipeline` plugins, which
+  # read a workflow's job logs and deployment statuses. `check_suite` already
+  # covers "CI finished". Listening to every workflow starts a run for each one
+  # — including Tidebot's own, which the job below then has to skip.
+  # workflow_run:
+  #   workflows: [Infrastructure, Deploy]
+  #   types: [completed]
   push:
+    # Change this if your default branch is not `main`.
     branches: [main]
 
+# A reusable workflow cannot be granted more than its caller has, and many
+# repositories default the workflow token to read-only. These are exactly the
+# scopes the bot uses; trim them and the matching feature stops working.
 permissions:
-  contents: write
-  pull-requests: write
-  issues: write
-  checks: read
-  statuses: read
-  actions: write
-  deployments: read
+  contents: write        # squash merge writes to the base branch
+  pull-requests: write   # merge, review, labels
+  issues: write          # comments and generated issues
+  checks: read           # the merge gate
+  statuses: read         # legacy commit statuses, where a repo still uses them
+  actions: write         # CI re-runs and workflow dispatch
+  deployments: read      # preview rows in the pipeline comment
 
 concurrency:
+  # Serialise per pull request so two events cannot both try to merge it.
   group: tidebot-${{ github.event.pull_request.number || github.event.issue.number || github.ref }}
   cancel-in-progress: false
 
 jobs:
   tidebot:
+    # Two events this must not act on:
+    #   - its own completion, or workflow_run would chain into itself;
+    #   - a pull request from a fork, where GITHUB_TOKEN is read-only and
+    #     every write would fail. Serve forks from a hosted instance instead.
     if: >-
+      (github.event_name != 'workflow_run' ||
+       github.event.workflow_run.name != 'Tidebot') &&
       (github.event_name != 'pull_request' ||
        github.event.pull_request.head.repo.full_name == github.repository)
-    uses: fridthjof-labs/tidebot/.github/workflows/run.yml@f790f18e306f6a1a23a28a7c18a5af10369df092 # v0.1.4
+    # Two pins, and they must move together: `@vX.Y.Z` selects the workflow
+    # file, and `ref: vX.Y.Z` selects the bot code that workflow checks out.
+    # Pinning only the first would still run the default branch.
+    uses: fridthjof-labs/tidebot/.github/workflows/run.yml@1328018e4222f828e2cf44961865184538870ad1 # v0.3.0
     with:
-      ref: f790f18e306f6a1a23a28a7c18a5af10369df092 # v0.1.4
+      ref: 1328018e4222f828e2cf44961865184538870ad1 # v0.3.0
