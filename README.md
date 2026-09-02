@@ -51,11 +51,11 @@ export SOPS_AGE_KEY_FILE="$HOME/.config/sops/age/fido2.txt"
 <!-- x-release-please-start-version -->
 ```bash
 curl -fsSL --proto '=https' --tlsv1.2 \
-  https://raw.githubusercontent.com/fridthjof-labs/infra-kit/v0.3.1/bootstrap/sync.sh \
+  https://raw.githubusercontent.com/fridthjof-labs/infra-kit/v0.3.2/bootstrap/sync.sh \
   -o /tmp/infra-kit-sync.sh
 
 bash /tmp/infra-kit-sync.sh \
-  --version v0.3.1 \
+  --version v0.3.2 \
   --vendor-dir infra/hack/vendor/infra-kit
 ```
 <!-- x-release-please-end -->

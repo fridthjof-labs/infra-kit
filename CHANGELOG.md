@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.2](https://github.com/fridthjof-labs/infra-kit/compare/v0.3.1...v0.3.2) (2026-09-02)
+
+
+### Bug Fixes
+
+* **encrypt:** keep the consumer's secrets hook away from ops.env ([#19](https://github.com/fridthjof-labs/infra-kit/issues/19)) ([f6bb037](https://github.com/fridthjof-labs/infra-kit/commit/f6bb03791c95871f10e0607288571458a9aae116))
+
 ## [0.3.1](https://github.com/fridthjof-labs/infra-kit/compare/v0.3.0...v0.3.1) (2026-08-30)
 
 
