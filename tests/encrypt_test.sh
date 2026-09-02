@@ -77,6 +77,27 @@ INFRA_KIT_VALIDATE_HOOK="$hook" "$hack/encrypt.sh" hooked.hcl >/dev/null
 [[ -f "$INFRA_KIT_ROOT/hooked.hcl.enc" ]] || fail "an accepted input was not encrypted"
 pass "an accepting validation hook allows the encryption"
 
+# The consumer's hook describes the consumer's secrets. A Makefile exports it
+# for every target, so encrypting the toolkit's own ops.env must not send it
+# through a tfvars schema check -- that is what left a consumer with no
+# operations file at all.
+printf '#!/usr/bin/env bash\nexit 1\n' > "$hook"
+chmod +x "$hook"
+printf 'INFRA_KIT_STATE_BUCKET=state\nAWS_SECRET_ACCESS_KEY=%s\n' "$token" \
+  > "$INFRA_KIT_ROOT/ops.env"
+INFRA_KIT_VALIDATE_HOOK="$hook" "$hack/encrypt.sh" ops.env >/dev/null ||
+  fail "ops.env was rejected by the consumer's secrets hook"
+[[ -f "$INFRA_KIT_ROOT/ops.env.enc" ]] || fail "ops.env was not encrypted"
+[[ ! -f "$INFRA_KIT_ROOT/ops.env" ]] || fail "plaintext ops.env survived encryption"
+pass "ops.env bypasses the consumer's secrets hook"
+
+printf 'INFRA_KIT_STATE_BUCKET=state\nif\n' > "$INFRA_KIT_ROOT/ops.env"
+if "$hack/encrypt.sh" ops.env "$INFRA_KIT_ROOT/broken.env.enc" >/dev/null 2>&1; then
+  fail "an unparseable ops.env was encrypted"
+fi
+rm "$INFRA_KIT_ROOT/ops.env"
+pass "an ops.env that does not parse is refused"
+
 printf 'more = "1"\n' > "$INFRA_KIT_ROOT/unreadable.hcl"
 error_text="$(INFRA_KIT_VALIDATE_HOOK="$consumer/not-a-hook" \
   "$hack/encrypt.sh" unreadable.hcl 2>&1 || true)"

@@ -22,7 +22,8 @@ Environment:
   INFRA_KIT_VALIDATE_HOOK  Executable run against the plaintext before it is
                            re-encrypted. Non-zero aborts and leaves the
                            encrypted file untouched. Repository-specific, so
-                           the consumer supplies it.
+                           the consumer supplies it. Not run for ops.env,
+                           which the toolkit validates itself.
   SOPS_EDITOR              Editor command. Falls back to EDITOR, then vi.
   SOPS_AGE_KEY             Explicit age identity, primarily for CI or recovery.
   SOPS_AGE_KEY_FILE        Explicit age identity file.
