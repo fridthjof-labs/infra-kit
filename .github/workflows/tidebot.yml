@@ -51,8 +51,9 @@ jobs:
       (github.event_name != 'pull_request' ||
        github.event.pull_request.head.repo.full_name == github.repository)
     # Two pins, and they must move together: `@vX.Y.Z` selects the workflow
-    # file, and `ref: vX.Y.Z` selects the bot code that workflow checks out.
-    # Pinning only the first would still run the default branch.
-    uses: fridthjof-labs/tidebot/.github/workflows/run.yml@1328018e4222f828e2cf44961865184538870ad1 # v0.3.0
-    with:
-      ref: 1328018e4222f828e2cf44961865184538870ad1 # v0.3.0
+    # file. From v0.4.0 the workflow defaults its `ref` to the commit it was
+    # itself resolved from, so this `uses:` is the only pin needed; passing
+    # `ref:` as well would pin the workflow and the bot code to different
+    # versions. Before v0.4.0 there was no such fallback and `ref:` had to be
+    # passed — restore it if this is ever rolled back.
+    uses: fridthjof-labs/tidebot/.github/workflows/run.yml@3f6da78f6108d52f5d9d87d09a6495ac560426ee # v0.4.0
