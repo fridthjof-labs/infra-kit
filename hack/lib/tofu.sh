@@ -16,6 +16,11 @@
 #   INFRA_KIT_STATE_BACKUP_DIR
 #                           where pre-apply state snapshots land.
 #                           Default: $INFRA_KIT_TOFU_DIR/../state-backups.
+#                           These snapshots are PLAINTEXT OpenTofu state:
+#                           provider credentials are stored in state in the
+#                           clear. Keep the directory gitignored, and encrypt
+#                           a snapshot before it leaves a machine — uploading
+#                           one as a CI artifact publishes every secret in it.
 
 # shellcheck shell=bash
 
