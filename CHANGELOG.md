@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.3.3](https://github.com/fridthjof-labs/infra-kit/compare/v0.3.2...v0.3.3) (2026-09-05)
+
+
+### Bug Fixes
+
+* make infra-kit onboarding reliable ([#26](https://github.com/fridthjof-labs/infra-kit/issues/26)) ([bb05168](https://github.com/fridthjof-labs/infra-kit/commit/bb05168a1bf31b86f042b44adcce027aa2df43e2))
+
+
+### Documentation
+
+* **tofu:** warn that state snapshots are plaintext credentials ([#24](https://github.com/fridthjof-labs/infra-kit/issues/24)) ([e080aab](https://github.com/fridthjof-labs/infra-kit/commit/e080aabca3fd75d38d3966bd1ed275d3a1d18557))
+
 ## [0.3.2](https://github.com/fridthjof-labs/infra-kit/compare/v0.3.1...v0.3.2) (2026-09-02)
 
 

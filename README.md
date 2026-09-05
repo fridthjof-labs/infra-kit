@@ -45,12 +45,12 @@ then vendor the release:
 <!-- x-release-please-start-version -->
 ```bash
 curl -fsSL --proto '=https' --tlsv1.2 \
-  https://raw.githubusercontent.com/fridthjof-labs/infra-kit/v0.3.2/bootstrap/sync.sh \
+  https://raw.githubusercontent.com/fridthjof-labs/infra-kit/v0.3.3/bootstrap/sync.sh \
   -o /tmp/infra-kit-sync.sh
 
 less /tmp/infra-kit-sync.sh
 bash /tmp/infra-kit-sync.sh \
-  --version v0.3.2 \
+  --version v0.3.3 \
   --vendor-dir infra/hack/vendor/infra-kit
 ```
 <!-- x-release-please-end -->
