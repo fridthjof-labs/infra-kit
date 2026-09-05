@@ -12,12 +12,13 @@ usage() {
 Usage:
   tofu-validate.sh [ROOT ...]
 
-Offline validation of every OpenTofu root (or just the named ones): fmt
+Validation of every OpenTofu root (or just the named ones): fmt
 -check, a backend-free init against the committed provider lock, and tofu
-validate. No credentials, no network beyond the provider cache, no state.
+validate. No production credentials or backend access. Initialization may
+download providers and modules; a provider cache alone does not ensure offline use.
 
 Each root gets a throwaway TF_DATA_DIR so a previously initialized production
-backend in .terraform/ cannot leak into an offline check.
+backend in .terraform/ cannot leak into this validation.
 EOF
   exit 2
 }

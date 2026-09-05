@@ -1,9 +1,8 @@
 # Adopting infra-kit
 
-A brand-new repository should not follow this page by hand: vendor the kit
-(step 1), then let `bootstrap/scaffold.sh` write the canonical layout —
-Makefile, workflow, sops rules, first root — in one command. This page is the
-contract behind that layout, and the path for an existing repository adopting
+For a new repository, follow the
+[scaffold quickstart](../README.md#start-a-new-infrastructure-repository).
+This page is the contract behind that layout, and the path for an existing repository adopting
 it incrementally. The full execution model lives in
 [tofu-standard.md](tofu-standard.md).
 
@@ -83,8 +82,8 @@ ROOT ?= site
 
 .PHONY: validate plan apply backup encrypt edit edit-ops sync-hack
 
-# Offline: no network, no credentials. Verifying the vendored bytes belongs
-# here, next to the other offline checks.
+# No production credentials or backend access. OpenTofu init may download
+# providers and modules; only the payload verification is fully offline.
 validate:
 	bash $(INFRA_KIT)/bootstrap/verify.sh $(INFRA_KIT)
 	bash $(INFRA_KIT)/hack/scan-repo.sh
@@ -108,7 +107,7 @@ edit:
 edit-ops:
 	bash $(INFRA_KIT)/hack/edit-encrypted.sh infra/ops.env.enc
 
-# The only target that reaches the network. sync.sh replaces the directory it
+# The only target that downloads infra-kit code. sync.sh replaces the directory it
 # is running from, so it re-execs itself from a copy first.
 sync-hack:
 	bash $(INFRA_KIT)/bootstrap/sync.sh \
@@ -122,7 +121,9 @@ documentation and the tested behaviour cannot drift apart.
 
 Local decryption uses an explicit `SOPS_AGE_KEY` or `SOPS_AGE_KEY_FILE` when
 set. Otherwise it uses the platform default:
-`~/.config/sops/age/secure-enclave.txt` on macOS, `~/.config/sops/age/fido2.txt` on Linux.
+`~/.config/sops/age/secure-enclave.txt` on macOS, `~/.config/sops/age/fido2.txt`
+on Linux. The Linux filename is historical; the hardware plugin uses YubiKey
+PIV, not FIDO2. See [key setup](encryption-bootstrap.md) for requirements.
 
 ## 3. Write the adapters
 
@@ -184,11 +185,13 @@ that silently ignored its input is a misconfiguration, not a success.
 
 ## Upgrading
 
+<!-- x-release-please-start-version -->
 ```bash
-make sync-hack INFRA_KIT_VERSION=v0.2.0
+make sync-hack INFRA_KIT_VERSION=v0.3.2
 git diff infra/hack/vendor      # review what changed
 make validate
 ```
+<!-- x-release-please-end -->
 
 The diff is the review. Nothing upgrades during a deploy.
 

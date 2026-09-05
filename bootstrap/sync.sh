@@ -4,9 +4,9 @@ set -euo pipefail
 # Fetches a pinned infra-kit release into a consumer's vendor directory and
 # records version and digest in infra-kit.lock.
 #
-# This is the only command that reaches the network. `validate`, `plan`, and
-# `apply` verify the committed bytes offline against the lock and never
-# download anything — an upgrade is a reviewed commit, not a side effect.
+# This is the only command that downloads infra-kit code. verify.sh checks
+# the committed bytes offline. OpenTofu may download providers and modules,
+# and plan/apply contact remote services; neither upgrades the kit.
 
 usage() {
   cat <<'EOF'
