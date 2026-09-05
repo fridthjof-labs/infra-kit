@@ -80,3 +80,25 @@ out="$(cd "$repo" && SOPS_AGE_KEY_FILE="$repo/identity.txt" make encrypt-ops 2>&
 [[ -f "$repo/tofu/ops.env.enc" ]] || fail "ops.env.enc was not written"
 [[ ! -f "$repo/tofu/ops.env" ]] || fail "plaintext ops.env survived encryption"
 pass "the operations file encrypts through the scaffolded Makefile"
+
+# Exercise the public quickstart's actual command with its nested vendor path.
+quickstart="$repo/quickstart"
+mkdir -p "$quickstart"
+git -C "$quickstart" init -q
+bash "$KIT_ROOT/bootstrap/sync.sh" --version test \
+  --vendor-dir "$quickstart/infra/hack/vendor/infra-kit" --source "$KIT_ROOT" >/dev/null
+awk '/<!-- quickstart-scaffold:begin -->/{flag=1;next} /<!-- quickstart-scaffold:end -->/{flag=0} flag' \
+  "$KIT_ROOT/README.md" | sed '/^```/d' > "$repo/quickstart.sh"
+[[ -s "$repo/quickstart.sh" ]] || fail "README scaffold command is missing"
+(cd "$quickstart" && bash "$repo/quickstart.sh") >/dev/null
+[[ -f "$quickstart/infra/platform/main.tf" ]] || fail "README scaffold did not create the documented root"
+grep -Fq "\$(CURDIR)/infra" "$quickstart/Makefile" || fail "README scaffold uses the wrong infrastructure directory"
+pass "README quickstart scaffolds the documented layout"
+
+# Execute the key guide's SOPS round trip with a disposable software identity.
+awk '/<!-- key-roundtrip:begin -->/{flag=1;next} /<!-- key-roundtrip:end -->/{flag=0} flag' \
+  "$KIT_ROOT/docs/encryption-bootstrap.md" | sed '/^```/d' > "$repo/key-roundtrip.sh"
+[[ -s "$repo/key-roundtrip.sh" ]] || fail "key round-trip command is missing"
+AGE_RECIPIENT="$recipient" SOPS_AGE_KEY_FILE="$repo/identity.txt" \
+  bash "$repo/key-roundtrip.sh" >/dev/null || fail "documented SOPS key round trip failed"
+pass "documented SOPS key round trip works"

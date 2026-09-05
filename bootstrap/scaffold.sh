@@ -119,7 +119,7 @@ ROOT ?= @ROOT@
 
 .PHONY: validate plan apply backup encrypt encrypt-ops edit edit-ops sync-hack
 
-# Offline: no network, no credentials.
+# No production credentials or backend access; init may download providers/modules.
 validate:
 	bash $(INFRA_KIT)/bootstrap/verify.sh $(INFRA_KIT)
 	bash $(INFRA_KIT)/hack/scan-repo.sh
@@ -146,7 +146,7 @@ edit:
 edit-ops:
 	bash $(INFRA_KIT)/hack/edit-encrypted.sh @TOFU_DIR@/ops.env.enc
 
-# The only target that reaches the network.
+# The only target that downloads infra-kit code.
 sync-hack:
 	bash $(INFRA_KIT)/bootstrap/sync.sh \
 	  --version $(INFRA_KIT_VERSION) --vendor-dir $(INFRA_KIT)
@@ -160,7 +160,7 @@ TEMPLATE
 
 render "$tofu_dir/.sops.yaml" <<'TEMPLATE'
 # Recipients for every encrypted file in this repository. Three, deliberately:
-#   - the operator's hardware identity (Secure Enclave on macOS, FIDO2 on
+#   - the operator's hardware identity (Secure Enclave on macOS, YubiKey PIV on
 #     Linux) -- the everyday local decrypt path
 #   - this repository's dedicated CI key -- the only identity CI holds, so a
 #     leak there cannot decrypt any other repository's secrets

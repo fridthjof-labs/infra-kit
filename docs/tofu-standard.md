@@ -34,7 +34,7 @@ the names.
 
 | Intent | Command | What actually runs |
 | --- | --- | --- |
-| Everything offline | `make validate` | `verify.sh` (vendored bytes) → `scan-repo.sh` (no plaintext secrets, keys, state) → `tofu-validate.sh` (fmt, lock-file init, validate per root) |
+| Validate without production credentials | `make validate` | `verify.sh` (vendored bytes) → `scan-repo.sh` (no plaintext secrets, keys, state) → `tofu-validate.sh` (fmt, lock-file init, validate per root) |
 | See a change | `make plan ROOT=x` | `tofu-run.sh x plan` |
 | Ship a change | `make apply ROOT=x` | `tofu-run.sh x apply` (state snapshot first) |
 | Snapshot state | `make backup ROOT=x` | `tofu-run.sh x backup` |

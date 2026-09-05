@@ -82,7 +82,7 @@ infra_kit_resolve_age_identity() {
         echo "set SOPS_AGE_KEY_FILE or create a Secure Enclave identity file" >&2
         ;;
       Linux*)
-        echo "set SOPS_AGE_KEY_FILE or create a FIDO2 identity file" >&2
+        echo "set SOPS_AGE_KEY_FILE or create a YubiKey PIV identity file" >&2
         ;;
       *)
         echo "set SOPS_AGE_KEY_FILE to an age identity file" >&2

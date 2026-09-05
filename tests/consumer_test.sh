@@ -54,7 +54,7 @@ chmod +x "$consumer/infra/hack/validate-secrets.sh"
 out="$(cd "$consumer" && make validate 2>&1)" ||
   fail "documented 'make validate' failed: $out"
 [[ "$out" == *"verified"* ]] || fail "validate did not verify the vendored payload: $out"
-pass "documented 'make validate' runs offline and verifies the payload"
+pass "documented 'make validate' verifies the payload (OpenTofu stubbed)"
 
 # The target that would have failed before: it invokes the vendored sync.sh,
 # which has to replace the very directory it is running from.

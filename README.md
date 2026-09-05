@@ -10,7 +10,8 @@
 
 Small, auditable shell tools for using SOPS-encrypted secrets with OpenTofu.
 Infra-kit is vendored into each infrastructure repository, pinned by version and
-digest, and runs offline after installation.
+digest. Verifying the vendored payload is offline; OpenTofu initialization
+may download providers and modules, and plan/apply contact remote services.
 
 It owns two layers:
 
@@ -28,25 +29,18 @@ Execution ([the OpenTofu standard](/docs/tofu-standard.md)) —
   operations file through a FIFO, derives each root's state key, initializes
   the locked backend, snapshots state before apply, and streams root secrets
   as a one-use `-var-file`.
-- `tofu-validate.sh` and `scan-repo.sh` are the offline gate: per-root fmt,
+- `tofu-validate.sh` and `scan-repo.sh` validate without production credentials: per-root fmt,
   lock-file init, and validate, plus a scan for plaintext secrets, keys, and
   state in the checkout.
 - `bootstrap/scaffold.sh` writes the whole canonical consumer layout —
   Makefile, sops rules, first root, gated CI workflow — into an empty
   repository, so every new IaC repository starts identical.
 
-## Install
+## Start a new infrastructure repository
 
-Prerequisites: Bash, [SOPS](https://github.com/getsops/sops), and
-[age](https://github.com/FiloSottile/age). Use this bootstrap guide:
-
-- [docs/encryption-bootstrap.md](/docs/encryption-bootstrap.md)
-
-If your key file is not the default above, set:
-
-```bash
-export SOPS_AGE_KEY_FILE="$HOME/.config/sops/age/fido2.txt"
-```
+Install Git, Bash, curl, and [mise](https://mise.jdx.dev/getting-started.html).
+Start in an empty Git repository. Download and inspect the bootstrap script,
+then vendor the release:
 
 <!-- x-release-please-start-version -->
 ```bash
@@ -54,52 +48,59 @@ curl -fsSL --proto '=https' --tlsv1.2 \
   https://raw.githubusercontent.com/fridthjof-labs/infra-kit/v0.3.2/bootstrap/sync.sh \
   -o /tmp/infra-kit-sync.sh
 
+less /tmp/infra-kit-sync.sh
 bash /tmp/infra-kit-sync.sh \
   --version v0.3.2 \
   --vendor-dir infra/hack/vendor/infra-kit
 ```
 <!-- x-release-please-end -->
 
-Commit both generated paths:
+Scaffold the Makefile, tool pins, encryption rules, first OpenTofu root, and CI
+workflow. Replace `my-org` and `platform` with your state prefix and root name:
+
+<!-- quickstart-scaffold:begin -->
+```bash
+bash infra/hack/vendor/infra-kit/bootstrap/scaffold.sh \
+  --state-prefix my-org --root platform --tofu-dir infra
+```
+<!-- quickstart-scaffold:end -->
+
+Run `mise install` to install the generated tool pins.
+Follow [encryption key setup](docs/encryption-bootstrap.md) to create and test
+the operator, dedicated CI, and recovery identities. Put their **public
+recipients** in `infra/.sops.yaml`. Create the state bucket and scoped credentials
+as described in the [operations-file contract](docs/tofu-standard.md), fill in
+`infra/ops.env` from `infra/ops.env.example`, then run:
+
+```bash
+mise exec -- make encrypt-ops
+mise exec -- make validate
+mise exec -- make plan ROOT=platform
+```
+
+Set the repository's `Production` environment secret `SOPS_AGE_KEY` to its
+dedicated CI identity. Configure that environment's protection rules before
+using the generated plan/apply workflow. For the first apply only, when no state
+exists yet, use `SKIP_STATE_BACKUP=1 mise exec -- make apply ROOT=platform`.
+Later applies take a state backup first.
+
+Commit the generated layout, encrypted operations file, and both vendored paths:
 
 ```text
 infra/hack/vendor/infra-kit/
 infra/hack/vendor/infra-kit.lock
 ```
 
-The lock records the version and exact payload digest. Later upgrades use the
-vendored `sync.sh`; validation and infrastructure operations never download
-code.
+The lock records the version and exact payload digest. `verify.sh` checks it
+offline. `make validate` needs no production credentials or backend access,
+but OpenTofu initialization may download providers and modules. Plan and apply
+contact your backend and providers; they never upgrade infra-kit.
 
-## Use
+## Adopt into an existing repository
 
-The consumer Makefile supplies the infrastructure root and exposes short local
-commands:
-
-```make
-INFRA_KIT := infra/hack/vendor/infra-kit
-export INFRA_KIT_ROOT := $(CURDIR)/infra
-
-encrypt:
-	$(INFRA_KIT)/hack/encrypt.sh
-
-edit:
-	$(INFRA_KIT)/hack/edit-encrypted.sh
-
-validate:
-	bash $(INFRA_KIT)/bootstrap/verify.sh $(INFRA_KIT)
-```
-
-Then the normal workflow is:
-
-```bash
-make encrypt   # first encryption
-make edit      # later changes
-make validate  # verify the vendored payload
-```
-
-See the [consumer guide](docs/consumer.md) for the complete Makefile, optional
-plaintext validation hook, upgrades, and FIFO-based OpenTofu execution.
+Use the [consumer guide](docs/consumer.md) for incremental adoption, Makefile
+integration, validation hooks, and upgrades. The scaffold refuses to overwrite
+existing files.
 
 ## Security model
 

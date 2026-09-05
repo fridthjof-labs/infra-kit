@@ -33,7 +33,7 @@ it otherwise succeeded, because the secret it asked for went unused.
 Local key selection:
   1. SOPS_AGE_KEY or SOPS_AGE_KEY_FILE, when explicitly set
   2. ~/.config/sops/age/secure-enclave.txt (macOS Touch ID)
-     ~/.config/sops/age/fido2.txt (Linux FIDO2)
+     ~/.config/sops/age/fido2.txt (Linux YubiKey PIV; legacy filename)
 EOF
 }
 
