@@ -35,6 +35,10 @@ Execution ([the OpenTofu standard](/docs/tofu-standard.md)) —
 - `bootstrap/scaffold.sh` writes the whole canonical consumer layout —
   Makefile, sops rules, first root, gated CI workflow — into an empty
   repository, so every new IaC repository starts identical.
+- `bootstrap/scaffold-go.sh` and `bootstrap/scaffold-ts.sh` do the same for a
+  Go module and a TypeScript repository: toolchain pinned once in `mise.toml`,
+  a CI workflow that calls the reusable `go-ci.yml` / `ts-ci.yml` here by
+  commit, and the Tidebot merge gate. See [bootstrap](docs/bootstrap.md).
 
 ## Start a new infrastructure repository
 
