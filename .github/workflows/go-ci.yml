@@ -1,0 +1,150 @@
+name: Go CI
+# Reusable. The per-repository Go baseline (lint at the tools module's floor,
+# tests on stable across an OS matrix, consumer readiness: race, govulncheck
+# and a build at the declared floor) as one workflow_call, so every Go
+# repository carries a ten-line caller instead of its own copy.
+#
+# The caller keeps its own `required checks` aggregator: that is the name
+# rulesets and Tidebot gate on, and a job inside a called workflow reports as
+# "<caller job> / <job>", which would move it.
+#
+# Private modules: pass `private-modules` (comma-separated repository names
+# under the caller's owner) plus the App secrets, and every job mints a scoped
+# installation token before Go fetches. Without it, nothing is minted.
+on:
+  workflow_call:
+    inputs:
+      lint-go-version-file:
+        description: go.mod that pins the toolchain lint builds golangci-lint with
+        type: string
+        default: tools/go.mod
+      test-os:
+        description: JSON array of runners for the test matrix
+        type: string
+        default: '["ubuntu-latest", "macos-latest", "windows-latest"]'
+      consumer-readiness:
+        description: Run race, govulncheck and the floor build
+        type: boolean
+        default: true
+      govulncheck-version:
+        type: string
+        default: v1.6.0
+      private-modules:
+        description: Comma-separated private repositories Go must be able to fetch
+        type: string
+        default: ''
+    secrets:
+      app-id:
+        required: false
+      app-private-key:
+        required: false
+permissions:
+  contents: read
+jobs:
+  lint:
+    name: lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: ${{ inputs.lint-go-version-file }}
+          cache-dependency-path: |
+            go.sum
+            tools/go.sum
+      - uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2
+        if: inputs.private-modules != ''
+        id: modules-token
+        with:
+          app-id: ${{ secrets.app-id }}
+          private-key: ${{ secrets.app-private-key }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ inputs.private-modules }}
+      - name: Authenticate private Go modules
+        if: inputs.private-modules != ''
+        env:
+          MODULES_TOKEN: ${{ steps.modules-token.outputs.token }}
+        run: |
+          git config --global \
+            url."https://x-access-token:${MODULES_TOKEN}@github.com/${GITHUB_REPOSITORY_OWNER}/".insteadOf \
+            "https://github.com/${GITHUB_REPOSITORY_OWNER}/"
+          echo "GOPRIVATE=github.com/${GITHUB_REPOSITORY_OWNER}" >> "$GITHUB_ENV"
+      - name: lint
+        run: make lint
+
+  test:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ${{ fromJSON(inputs.test-os) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: stable
+      - uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2
+        if: inputs.private-modules != ''
+        id: modules-token
+        with:
+          app-id: ${{ secrets.app-id }}
+          private-key: ${{ secrets.app-private-key }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ inputs.private-modules }}
+      - name: Authenticate private Go modules
+        if: inputs.private-modules != ''
+        shell: bash
+        env:
+          MODULES_TOKEN: ${{ steps.modules-token.outputs.token }}
+        run: |
+          git config --global \
+            url."https://x-access-token:${MODULES_TOKEN}@github.com/${GITHUB_REPOSITORY_OWNER}/".insteadOf \
+            "https://github.com/${GITHUB_REPOSITORY_OWNER}/"
+          echo "GOPRIVATE=github.com/${GITHUB_REPOSITORY_OWNER}" >> "$GITHUB_ENV"
+      - name: test
+        run: go test ./...
+
+  # A library is a dependency before it is a product: a break here reaches
+  # every consumer before anyone runs their suite, so the floor is checked.
+  consumer-readiness:
+    name: consumer readiness
+    if: inputs.consumer-readiness
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: stable # govulncheck reports vulnerabilities in its own toolchain
+      - uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2
+        if: inputs.private-modules != ''
+        id: modules-token
+        with:
+          app-id: ${{ secrets.app-id }}
+          private-key: ${{ secrets.app-private-key }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ inputs.private-modules }}
+      - name: Authenticate private Go modules
+        if: inputs.private-modules != ''
+        env:
+          MODULES_TOKEN: ${{ steps.modules-token.outputs.token }}
+        run: |
+          git config --global \
+            url."https://x-access-token:${MODULES_TOKEN}@github.com/${GITHUB_REPOSITORY_OWNER}/".insteadOf \
+            "https://github.com/${GITHUB_REPOSITORY_OWNER}/"
+          echo "GOPRIVATE=github.com/${GITHUB_REPOSITORY_OWNER}" >> "$GITHUB_ENV"
+
+      - name: test with the race detector
+        run: go test -race ./...
+
+      - name: check for vulnerabilities
+        run: go run golang.org/x/vuln/cmd/govulncheck@${{ inputs.govulncheck-version }} ./...
+
+      - name: build at the declared floor
+        run: |
+          floor="$(awk '/^go /{print $2; exit}' go.mod)"
+          echo "go.mod declares go $floor; building with GOTOOLCHAIN=go${floor}"
+          GOTOOLCHAIN="go${floor}" go build ./...
