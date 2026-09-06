@@ -1,0 +1,34 @@
+name: TS CI
+# Reusable. A TypeScript repository's whole check as one workflow_call: the
+# toolchain comes from the caller's mise.toml through mise-action, and the
+# work is whatever its `check` task runs, so CI never restates a version or a
+# command that the developer's `mise run check` does not also run.
+on:
+  workflow_call:
+    inputs:
+      setup-task:
+        description: mise task that installs dependencies; empty skips it
+        type: string
+        default: setup
+      check-task:
+        description: mise task that is the definition of done
+        type: string
+        default: check
+      runs-on:
+        type: string
+        default: ubuntu-latest
+permissions:
+  contents: read
+jobs:
+  check:
+    name: check
+    runs-on: ${{ inputs.runs-on }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+      - name: setup
+        if: inputs.setup-task != ''
+        run: mise run ${{ inputs.setup-task }}
+      - name: check
+        run: mise run ${{ inputs.check-task }}
