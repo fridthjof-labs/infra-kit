@@ -13,11 +13,11 @@ Nothing is installed yet, so fetch `sync.sh` once by hand:
 <!-- x-release-please-start-version -->
 ```bash
 curl -fsSL --proto '=https' --tlsv1.2 \
-  https://raw.githubusercontent.com/fridthjof-labs/infra-kit/v0.3.2/bootstrap/sync.sh \
+  https://raw.githubusercontent.com/fridthjof-labs/infra-kit/v0.3.3/bootstrap/sync.sh \
   -o /tmp/infra-kit-sync.sh
 
 bash /tmp/infra-kit-sync.sh \
-  --version v0.3.2 \
+  --version v0.3.3 \
   --vendor-dir infra/hack/vendor/infra-kit
 ```
 
@@ -34,7 +34,7 @@ If you are adopting a private fork instead, `sync.sh` falls back to an
 authenticated `gh`, and the manual fetch above becomes:
 
 ```bash
-gh api repos/YOUR-ORG/infra-kit/contents/bootstrap/sync.sh?ref=v0.3.2 \
+gh api repos/YOUR-ORG/infra-kit/contents/bootstrap/sync.sh?ref=v0.3.3 \
   --jq .content | base64 -d > /tmp/infra-kit-sync.sh
 ```
 <!-- x-release-please-end -->
@@ -70,7 +70,7 @@ infra/
 <!-- consumer-makefile:begin -->
 ```make
 INFRA_KIT         := infra/hack/vendor/infra-kit
-INFRA_KIT_VERSION := v0.3.2
+INFRA_KIT_VERSION := v0.3.3
 
 export INFRA_KIT_ROOT          := $(CURDIR)/infra
 export INFRA_KIT_STATE_PREFIX  := my-org
@@ -187,7 +187,7 @@ that silently ignored its input is a misconfiguration, not a success.
 
 <!-- x-release-please-start-version -->
 ```bash
-make sync-hack INFRA_KIT_VERSION=v0.3.2
+make sync-hack INFRA_KIT_VERSION=v0.3.3
 git diff infra/hack/vendor      # review what changed
 make validate
 ```
