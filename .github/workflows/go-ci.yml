@@ -14,6 +14,10 @@ name: Go CI
 on:
   workflow_call:
     inputs:
+      linux-runner:
+        description: JSON runner label or label array for Linux jobs; callers must keep untrusted code off shared runners
+        type: string
+        default: '"ubuntu-latest"'
       lint-go-version-file:
         description: go.mod that pins the toolchain lint builds golangci-lint with
         type: string
@@ -43,7 +47,7 @@ permissions:
 jobs:
   lint:
     name: lint
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(inputs.linux-runner) }}
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -75,7 +79,7 @@ jobs:
 
   test:
     name: ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ startsWith(matrix.os, 'ubuntu-') && fromJSON(inputs.linux-runner) || matrix.os }}
     timeout-minutes: 20
     strategy:
       fail-fast: false
@@ -112,7 +116,7 @@ jobs:
   consumer-readiness:
     name: consumer readiness
     if: inputs.consumer-readiness
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(inputs.linux-runner) }}
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
