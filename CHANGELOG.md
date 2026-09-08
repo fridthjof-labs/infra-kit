@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/fridthjof-labs/infra-kit/compare/v0.3.3...v0.4.0) (2026-09-07)
+
+
+### Features
+
+* allow callers to select self-hosted runners ([#31](https://github.com/fridthjof-labs/infra-kit/issues/31)) ([54539ff](https://github.com/fridthjof-labs/infra-kit/commit/54539ffaaeaf6d50361388408f306b768a4e0603))
+
 ## [0.3.3](https://github.com/fridthjof-labs/infra-kit/compare/v0.3.2...v0.3.3) (2026-09-06)
 
 
