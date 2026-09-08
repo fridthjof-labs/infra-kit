@@ -18,6 +18,10 @@ on:
         description: JSON runner label or label array for Linux jobs; callers must keep untrusted code off shared runners
         type: string
         default: '"ubuntu-latest"'
+      light-runner:
+        description: Optional JSON runner labels for lint; defaults to linux-runner
+        type: string
+        default: ''
       lint-go-version-file:
         description: go.mod that pins the toolchain lint builds golangci-lint with
         type: string
@@ -47,12 +51,13 @@ permissions:
 jobs:
   lint:
     name: lint
-    runs-on: ${{ fromJSON(inputs.linux-runner) }}
+    runs-on: ${{ fromJSON(inputs.light-runner || inputs.linux-runner) }}
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
+          cache: ${{ runner.environment != 'self-hosted' }}
           go-version-file: ${{ inputs.lint-go-version-file }}
           cache-dependency-path: |
             go.sum
@@ -89,6 +94,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
+          cache: ${{ runner.environment != 'self-hosted' }}
           go-version: stable
       - uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2
         if: inputs.private-modules != ''
@@ -122,6 +128,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
+          cache: ${{ runner.environment != 'self-hosted' }}
           go-version: stable # govulncheck reports vulnerabilities in its own toolchain
       - uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2
         if: inputs.private-modules != ''
