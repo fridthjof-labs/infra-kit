@@ -128,8 +128,12 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  workflows:
+    uses: fridthjof-labs/infra-kit/.github/workflows/workflow-ci.yml@@KIT_REF@ # infra-kit @KIT_VERSION@
+
   # Installs the toolchain from mise.toml and runs `mise run check`.
   ci:
+    needs: workflows
     uses: fridthjof-labs/infra-kit/.github/workflows/ts-ci.yml@@KIT_REF@ # infra-kit @KIT_VERSION@
 TEMPLATE
 
@@ -139,6 +143,7 @@ render .github/tidebot.yaml <<'TEMPLATE'
 tide:
   requiredContexts:
     - ci / check
+    - workflows / validate workflows
 TEMPLATE
 
 gitignore_marker="# ts baseline (scaffolded)"

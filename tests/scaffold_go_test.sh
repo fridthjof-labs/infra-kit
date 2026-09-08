@@ -47,3 +47,7 @@ if (cd "$repo" && rm -f mise.toml && bash hack/vendor/infra-kit/bootstrap/scaffo
   fail "scaffold-go accepted a tag as --kit-ref"
 fi
 pass "a tag is not a pin"
+
+grep -q "workflow-ci.yml@$sha " "$repo/.github/workflows/ci.yml" || fail "workflow validation gate missing"
+grep -q "needs: workflows" "$repo/.github/workflows/ci.yml" || fail "baseline does not depend on workflow validation"
+pass "workflow validation blocks the baseline before expensive checks"

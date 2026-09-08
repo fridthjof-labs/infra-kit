@@ -40,6 +40,9 @@ Execution ([the OpenTofu standard](/docs/tofu-standard.md)) —
   a CI workflow that calls the reusable `go-ci.yml` / `ts-ci.yml` here by
   commit, and the Tidebot merge gate. See [bootstrap](docs/bootstrap.md).
 
+The [shared CI baseline](docs/ci-standard.md) adds workflow validation and
+portable runner, cache, permission and merge-gate conventions.
+
 ## Start a new infrastructure repository
 
 Install Git, Bash, curl, and [mise](https://mise.jdx.dev/getting-started.html).

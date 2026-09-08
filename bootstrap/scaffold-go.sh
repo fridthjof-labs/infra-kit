@@ -209,9 +209,13 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  workflows:
+    uses: fridthjof-labs/infra-kit/.github/workflows/workflow-ci.yml@@KIT_REF@ # infra-kit @KIT_VERSION@
+
   # lint at the tools module's floor, tests on stable across the matrix,
   # consumer readiness (race, govulncheck, build at the declared floor).
   baseline:
+    needs: workflows
     uses: fridthjof-labs/infra-kit/.github/workflows/go-ci.yml@@KIT_REF@ # infra-kit @KIT_VERSION@
     with:
       private-modules: '@PRIVATE@'
@@ -224,7 +228,7 @@ jobs:
   # the called workflow, where it would report as "baseline / required checks".
   required-checks:
     name: required checks
-    if: always()
+    if: ${{ !cancelled() }}
     needs: [baseline]
     runs-on: ubuntu-latest
     timeout-minutes: 5
