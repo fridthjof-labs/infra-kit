@@ -29,6 +29,10 @@ jobs:
       - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
       - name: setup
         if: inputs.setup-task != ''
-        run: mise run ${{ inputs.setup-task }}
+        env:
+          MISE_TASK: ${{ inputs.setup-task }}
+        run: mise run "$MISE_TASK"
       - name: check
-        run: mise run ${{ inputs.check-task }}
+        env:
+          MISE_TASK: ${{ inputs.check-task }}
+        run: mise run "$MISE_TASK"

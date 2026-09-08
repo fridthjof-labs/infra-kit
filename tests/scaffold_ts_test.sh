@@ -34,3 +34,7 @@ if (cd "$repo" && bash hack/vendor/infra-kit/bootstrap/scaffold-ts.sh \
   fail "scaffold-ts accepted yarn"
 fi
 pass "pnpm or bun only"
+
+grep -q "workflow-ci.yml@$sha " "$repo/.github/workflows/ci.yml" || fail "workflow validation gate missing"
+grep -q "needs: workflows" "$repo/.github/workflows/ci.yml" || fail "baseline does not depend on workflow validation"
+pass "workflow validation blocks the baseline before expensive checks"

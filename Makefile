@@ -14,7 +14,7 @@ test:
 # can write to this repository, so every action stays pinned to a commit SHA.
 pins:
 	@bad=$$(grep -rhoE '^\s*-?\s*uses: [^ ]+' .github/workflows/ \
-	  | grep -vE '@[0-9a-f]{40}$$' || true); \
+	  | grep -vE 'uses: \./|@[0-9a-f]{40}$$' || true); \
 	if [ -n "$$bad" ]; then \
 	  echo "error: unpinned action(s):" >&2; echo "$$bad" >&2; exit 1; \
 	fi; \

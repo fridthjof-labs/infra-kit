@@ -68,6 +68,7 @@ jobs:
         with:
           app-id: ${{ secrets.app-id }}
           private-key: ${{ secrets.app-private-key }}
+          permission-contents: read
           owner: ${{ github.repository_owner }}
           repositories: ${{ inputs.private-modules }}
       - name: Authenticate private Go modules
@@ -102,6 +103,7 @@ jobs:
         with:
           app-id: ${{ secrets.app-id }}
           private-key: ${{ secrets.app-private-key }}
+          permission-contents: read
           owner: ${{ github.repository_owner }}
           repositories: ${{ inputs.private-modules }}
       - name: Authenticate private Go modules
@@ -136,6 +138,7 @@ jobs:
         with:
           app-id: ${{ secrets.app-id }}
           private-key: ${{ secrets.app-private-key }}
+          permission-contents: read
           owner: ${{ github.repository_owner }}
           repositories: ${{ inputs.private-modules }}
       - name: Authenticate private Go modules
@@ -152,7 +155,9 @@ jobs:
         run: go test -race ./...
 
       - name: check for vulnerabilities
-        run: go run golang.org/x/vuln/cmd/govulncheck@${{ inputs.govulncheck-version }} ./...
+        env:
+          GOVULNCHECK_VERSION: ${{ inputs.govulncheck-version }}
+        run: go run "golang.org/x/vuln/cmd/govulncheck@$GOVULNCHECK_VERSION" ./...
 
       - name: build at the declared floor
         run: |
