@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.5.0](https://github.com/fridthjof-labs/infra-kit/compare/v0.4.0...v0.5.0) (2026-10-22)
+
+
+### ⚠ BREAKING CHANGES
+
+* focus infra-kit on encryption ([#36](https://github.com/fridthjof-labs/infra-kit/issues/36))
+
+### Refactoring
+
+* focus infra-kit on encryption ([#36](https://github.com/fridthjof-labs/infra-kit/issues/36)) ([a821d37](https://github.com/fridthjof-labs/infra-kit/commit/a821d374b0e5d1bff09c0c25bc90f87333e9467f))
+
 ## [0.4.0](https://github.com/fridthjof-labs/infra-kit/compare/v0.3.3...v0.4.0) (2026-09-07)
 
 

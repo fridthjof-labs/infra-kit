@@ -25,12 +25,12 @@ then vendor a release into your repository:
 <!-- x-release-please-start-version -->
 ```bash
 curl -fsSL --proto '=https' --tlsv1.2 \
-  https://raw.githubusercontent.com/fridthjof-labs/infra-kit/v0.4.0/bootstrap/sync.sh \
+  https://raw.githubusercontent.com/fridthjof-labs/infra-kit/v0.5.0/bootstrap/sync.sh \
   -o /tmp/infra-kit-sync.sh
 
 less /tmp/infra-kit-sync.sh
 bash /tmp/infra-kit-sync.sh \
-  --version v0.4.0 \
+  --version v0.5.0 \
   --vendor-dir infra/hack/vendor/infra-kit
 ```
 <!-- x-release-please-end -->
