@@ -118,10 +118,7 @@ infra_kit_sops_decrypt() {
   fi
 }
 
-# The operations file is this toolkit's own schema, so the consumer's secrets
-# hook never sees it. Its state-access check needs the merged env (base plus
-# any root overlay) and stays at run time; encryption only asks that the file
-# parses as an env file.
+# Retain syntax validation and hook behavior for existing encrypted ops.env files.
 infra_kit_validate_ops_plaintext() {
   if ! bash -n "$1" 2>/dev/null; then
     echo "error: operations file does not parse as an env file" >&2

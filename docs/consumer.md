@@ -1,10 +1,9 @@
 # Adopting infra-kit
 
-For a new repository, follow the
-[scaffold quickstart](../README.md#start-a-new-infrastructure-repository).
-This page is the contract behind that layout, and the path for an existing repository adopting
-it incrementally. The full execution model lives in
-[tofu-standard.md](tofu-standard.md).
+Start with the [encryption quickstart](../README.md#get-started) and
+[key setup](encryption-bootstrap.md). Your repository supplies `.sops.yaml`,
+plaintext ignore rules, and any validation hook. Infra-kit does not manage
+backends, state, deployments, or CI workflows.
 
 ## 1. Vendor it
 
@@ -27,7 +26,7 @@ vendors is digest-checked from that point on.
 
 That writes `infra/hack/vendor/infra-kit/` and
 `infra/hack/vendor/infra-kit.lock`. **Commit both.** The vendored files are
-upstream's; the lock is what proves it. Every later upgrade is `make sync-hack`
+reviewed upstream payload; the lock records its expected contents. Upgrade with `make sync-hack`
 — this manual step happens once.
 
 If you are adopting a private fork instead, `sync.sh` falls back to an
@@ -39,76 +38,29 @@ gh api repos/YOUR-ORG/infra-kit/contents/bootstrap/sync.sh?ref=v0.4.0 \
 ```
 <!-- x-release-please-end -->
 
-`INFRA_KIT_VALIDATE_HOOK` describes the roots' `secrets.auto.tfvars` files.
-Exporting it for every target is fine: `ops.env` is the kit's own file and
-never reaches the hook. Encryption only checks that it parses; the
-state-access schema is checked at run time against the merged base and overlay.
+## 2. Add Makefile targets
 
-The vendored payload contains everything the Makefile below invokes:
-
-```
-infra/
-  .sops.yaml
-  ops.env.enc                    <- shared operations file (state + credentials)
-  site/                          <- one directory per OpenTofu root
-    *.tf
-    secrets.auto.tfvars.enc      <- optional root-scoped secrets
-  hack/
-    validate-secrets.sh          <- yours: the secret schema
-    vendor/
-      infra-kit.lock             <- version + digest
-      infra-kit/                 <- upstream, never edited
-        VERSION
-        hack/                    <- encrypt, edit, with-decrypt, tofu-run,
-                                    tofu-validate, scan-repo
-        bootstrap/               <- sync, verify, digest, scaffold
-```
-
-## 2. Point the Makefile at it
+Set `FILE` to the plaintext filename relative to the repository root.
+The edit target uses its encrypted `.enc` counterpart.
 
 <!-- x-release-please-start-version -->
 <!-- consumer-makefile:begin -->
 ```make
 INFRA_KIT         := infra/hack/vendor/infra-kit
 INFRA_KIT_VERSION := v0.4.0
+export INFRA_KIT_ROOT := $(CURDIR)/infra
+FILE ?= infra/secrets.env
 
-export INFRA_KIT_ROOT          := $(CURDIR)/infra
-export INFRA_KIT_STATE_PREFIX  := my-org
-export INFRA_KIT_TMP_PREFIX    := my-org
-export INFRA_KIT_VALIDATE_HOOK := $(CURDIR)/infra/hack/validate-secrets.sh
-
-# State operations are per-root: make plan ROOT=site.
-ROOT ?= site
-
-.PHONY: validate plan apply backup encrypt edit edit-ops sync-hack
-
-# No production credentials or backend access. OpenTofu init may download
-# providers and modules; only the payload verification is fully offline.
-validate:
+.PHONY: verify encrypt edit sync-hack
+verify:
 	bash $(INFRA_KIT)/bootstrap/verify.sh $(INFRA_KIT)
-	bash $(INFRA_KIT)/hack/scan-repo.sh
-	bash $(INFRA_KIT)/hack/tofu-validate.sh
 
-plan:
-	bash $(INFRA_KIT)/hack/tofu-run.sh $(ROOT) plan
+encrypt: verify
+	bash $(INFRA_KIT)/hack/encrypt.sh "$(FILE)"
 
-apply:
-	bash $(INFRA_KIT)/hack/tofu-run.sh $(ROOT) apply
+edit: verify
+	bash $(INFRA_KIT)/hack/edit-encrypted.sh "$(FILE).enc"
 
-backup:
-	bash $(INFRA_KIT)/hack/tofu-run.sh $(ROOT) backup
-
-encrypt:
-	bash $(INFRA_KIT)/hack/encrypt.sh infra/$(ROOT)/secrets.auto.tfvars
-
-edit:
-	bash $(INFRA_KIT)/hack/edit-encrypted.sh infra/$(ROOT)/secrets.auto.tfvars.enc
-
-edit-ops:
-	bash $(INFRA_KIT)/hack/edit-encrypted.sh infra/ops.env.enc
-
-# The only target that downloads infra-kit code. sync.sh replaces the directory it
-# is running from, so it re-execs itself from a copy first.
 sync-hack:
 	bash $(INFRA_KIT)/bootstrap/sync.sh \
 	  --version $(INFRA_KIT_VERSION) --vendor-dir $(INFRA_KIT)
@@ -116,72 +68,36 @@ sync-hack:
 <!-- consumer-makefile:end -->
 <!-- x-release-please-end -->
 
-`tests/consumer_test.sh` extracts that block from this file and runs it, so the
-documentation and the tested behaviour cannot drift apart.
+Commit the encrypted files, public recipients, vendored files, and lock.
+Keep private identities outside the repository and ignore plaintext filenames.
+`verify` checks only the vendored payload; it does not scan your repository
+for secrets or validate infrastructure.
 
-Local decryption uses an explicit `SOPS_AGE_KEY` or `SOPS_AGE_KEY_FILE` when
-set. Otherwise it uses the platform default:
-`~/.config/sops/age/secure-enclave.txt` on macOS, `~/.config/sops/age/fido2.txt`
-on Linux. The Linux filename is historical; the hardware plugin uses YubiKey
-PIV, not FIDO2. See [key setup](encryption-bootstrap.md) for requirements.
-
-## 3. Write the adapters
-
-Everything repository-specific stays yours; since v0.3 that no longer includes
-the Tofu driver itself.
-
-**`validate-secrets.sh`** — takes a plaintext file, exits non-zero if a
-required key is missing. This is the file that differed most between
-repositories, because the required keys genuinely differ:
+## 3. Consume encrypted input
 
 ```bash
-#!/usr/bin/env bash
-set -euo pipefail
-plaintext="$1"
-missing=()
-for key in SESSION_SECRET GOOGLE_CLIENT_ID; do
-  grep -q "^\s*${key}\s*=" "$plaintext" || missing+=("$key")
-done
-if ((${#missing[@]})); then
-  printf 'missing required secret: %s\n' "${missing[@]}" >&2
-  echo "fix it with: make edit" >&2
-  exit 1
-fi
+bash infra/hack/vendor/infra-kit/hack/with-decrypt.sh \
+  CONFIG=infra/secrets.env.enc -- bash -c 'some-tool --config "$CONFIG"'
 ```
 
-Both `encrypt.sh` and `edit-encrypted.sh` run it before writing; a non-zero
-exit aborts and leaves the input and any existing `.enc` untouched. A
-first encryption is where a missing required key is cheapest to catch, so the
-hook is not an edit-only guard.
+Each variable points to a private FIFO. The command must read each FIFO exactly
+once: an unread FIFO fails the run, and reading twice blocks. Infra-kit does
+not write decrypted input to a regular file, but the receiving command can.
 
-`edit-encrypted.sh` compares the plaintext before and after your editor. A save
-that changed nothing prints `unchanged:` and does not re-encrypt — sops mints a
-fresh data key every time, so an unconditional rewrite would change the
-ciphertext and leave a dropped paste looking exactly like a real edit, in the
-command output and in `git diff` alike. Nothing being written also means there
-is nothing for the hook to validate, so it does not run on that path.
+Set `SOPS_AGE_KEY_FILE` to your private identity, or supply `SOPS_AGE_KEY`
+inline in an environment that needs it. Explicit keys override the platform
+defaults described in [key setup](encryption-bootstrap.md).
 
-**`INFRA_KIT_OPS_HOOK`** (optional) — an executable run inside every
-`tofu-run.sh` invocation after the operations file is sourced, with
-`INFRA_KIT_TOFU_ROOT` naming the root. The kit already requires the state
-contract (`INFRA_KIT_STATE_BUCKET`, `INFRA_KIT_STATE_ENDPOINT`, the two AWS
-keys); the hook asserts whatever else your providers need, and can treat an
-exceptional root differently instead of forking the driver.
+## Validation hooks
 
-**Tofu execution is the kit's.** `tofu-run.sh` decrypts through one-use FIFOs,
-derives the state key, initializes the locked backend, snapshots state before
-apply, and streams root secrets as `-var-file`. `with-decrypt.sh` remains the
-seam for anything else that needs a secret in flight:
+Set `INFRA_KIT_VALIDATE_HOOK` to an executable that accepts the plaintext
+filename and exits nonzero when invalid. Encrypt and edit run it before
+replacing ciphertext; rejection preserves the input and existing encrypted file.
+An unchanged edit does not re-encrypt or run the hook.
 
-```bash
-"$INFRA_KIT/hack/with-decrypt.sh" \
-  TFVARS=infra/site/secrets.auto.tfvars.enc \
-  -- bash -c 'some-tool --config "$TFVARS"'
-```
-
-Each name becomes a FIFO. Plaintext is streamed and never written to a file. If
-the command never reads a secret, `with-decrypt.sh` exits non-zero — a command
-that silently ignored its input is a misconfiguration, not a success.
+For compatibility, files named `ops.env` still receive Bash syntax validation
+and bypass the custom hook. This does not validate an infrastructure schema.
+Use another filename when your custom hook must validate an environment file.
 
 ## Upgrading
 
@@ -189,7 +105,7 @@ that silently ignored its input is a misconfiguration, not a success.
 ```bash
 make sync-hack INFRA_KIT_VERSION=v0.4.0
 git diff infra/hack/vendor      # review what changed
-make validate
+make verify
 ```
 <!-- x-release-please-end -->
 
@@ -204,10 +120,9 @@ error: vendored infra-kit does not match infra/hack/vendor/infra-kit.lock
 a vendored file was edited locally; re-run make sync-hack or revert it
 ```
 
-Someone changed an upstream file in place. Either the change belongs upstream —
-send it there and sync a new version — or it belongs in your adapters. It does
-not belong in the vendor directory, which is how the three copies diverged in
-the first place.
+The vendored files differ from the committed lock. Review the changes before
+reverting or re-syncing. Keep repository-specific changes in your adapters so
+they are not overwritten by the next upgrade.
 
 `verify.sh` is itself vendored, so it guards against accident rather than
 against someone with commit access. The lock is committed: a change to either

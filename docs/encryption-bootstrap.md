@@ -1,6 +1,6 @@
 # Encryption key bootstrap (macOS + Linux)
 
-Create an operator identity, verify it, then configure the scaffold's recipients.
+Create an operator identity, verify it, then configure your repository's recipients.
 Never overwrite an existing identity when following this guide.
 
 Install [age](https://github.com/FiloSottile/age#installation) and
@@ -106,13 +106,13 @@ match. Hardware decryption may prompt for Touch ID, a PIN, or a touch.
 ```
 <!-- key-roundtrip:end -->
 
-## 3. Configure the three scaffold recipients
+## 3. Configure recipients
 
-Replace the placeholders in `infra/.sops.yaml` (or `tofu/.sops.yaml` if you used
-the scaffold's default directory):
+Put the public recipients in `infra/.sops.yaml`, using a comma-separated `age`
+value when adding multiple identities:
 
 - Operator: the public `AGE_RECIPIENT` verified above.
-- CI: a separate software identity dedicated to this repository. Generate it
+- CI, if needed: a separate software identity dedicated to this repository. Generate it
   with `age-keygen -o /secure/path/repository-ci.txt` and obtain its public
   recipient with `age-keygen -y /secure/path/repository-ci.txt`. Store the
   private identity as the repository's `Production` environment secret
@@ -123,5 +123,5 @@ the scaffold's default directory):
 
 Verify each identity with the round trip before encrypting real data. Commit
 only public recipients and encrypted files; keep private identities outside the
-repository. Return to the [quickstart](../README.md#start-a-new-infrastructure-repository)
-to encrypt the operations file and run validation and the first plan.
+repository. Return to the [quickstart](../README.md#get-started) to encrypt a
+sample file. Configure CI access only if your own workflow needs decryption.

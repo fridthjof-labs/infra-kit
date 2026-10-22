@@ -8,46 +8,19 @@
 [![Latest release](https://img.shields.io/github/v/release/fridthjof-labs/infra-kit)](https://github.com/fridthjof-labs/infra-kit/releases/latest)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-Small, auditable shell tools for using SOPS-encrypted secrets with OpenTofu.
-Infra-kit is vendored into each infrastructure repository, pinned by version and
-digest. Verifying the vendored payload is offline; OpenTofu initialization
-may download providers and modules, and plan/apply contact remote services.
+Shell tools for encrypting, editing, and using secrets with SOPS and age.
+I built infra-kit to share these operations across infrastructure repositories.
+The tools are vendored into each repository, pinned by version and digest.
 
-It owns two layers:
+- `encrypt.sh` encrypts a file and removes the plaintext on success.
+- `edit-encrypted.sh` edits a private temporary copy and encrypts it back.
+- `with-decrypt.sh` streams decrypted input to a command through a one-use FIFO.
 
-Encryption —
+## Get started
 
-- `encrypt.sh` encrypts a plaintext file and removes the plaintext.
-- `edit-encrypted.sh` opens a mode-0600 temporary file, validates it, encrypts
-  it back, and removes the temporary file.
-- `with-decrypt.sh` streams plaintext to a command through a FIFO, so plan and
-  apply do not need a plaintext secrets file.
-
-Execution ([the OpenTofu standard](/docs/tofu-standard.md)) —
-
-- `tofu-run.sh` is the one path to production state: it sources the encrypted
-  operations file through a FIFO, derives each root's state key, initializes
-  the locked backend, snapshots state before apply, and streams root secrets
-  as a one-use `-var-file`.
-- `tofu-validate.sh` and `scan-repo.sh` validate without production credentials: per-root fmt,
-  lock-file init, and validate, plus a scan for plaintext secrets, keys, and
-  state in the checkout.
-- `bootstrap/scaffold.sh` writes the whole canonical consumer layout —
-  Makefile, sops rules, first root, gated CI workflow — into an empty
-  repository, so every new IaC repository starts identical.
-- `bootstrap/scaffold-go.sh` and `bootstrap/scaffold-ts.sh` do the same for a
-  Go module and a TypeScript repository: toolchain pinned once in `mise.toml`,
-  a CI workflow that calls the reusable `go-ci.yml` / `ts-ci.yml` here by
-  commit, and the Tidebot merge gate. See [bootstrap](docs/bootstrap.md).
-
-The [shared CI baseline](docs/ci-standard.md) adds workflow validation and
-portable runner, cache, permission and merge-gate conventions.
-
-## Start a new infrastructure repository
-
-Install Git, Bash, curl, and [mise](https://mise.jdx.dev/getting-started.html).
-Start in an empty Git repository. Download and inspect the bootstrap script,
-then vendor the release:
+Install Bash, Git, curl, [SOPS](https://github.com/getsops/sops), and
+[age](https://github.com/FiloSottile/age). Download and inspect the installer,
+then vendor a release into your repository:
 
 <!-- x-release-please-start-version -->
 ```bash
@@ -62,52 +35,55 @@ bash /tmp/infra-kit-sync.sh \
 ```
 <!-- x-release-please-end -->
 
-Scaffold the Makefile, tool pins, encryption rules, first OpenTofu root, and CI
-workflow. Replace `my-org` and `platform` with your state prefix and root name:
-
-<!-- quickstart-scaffold:begin -->
-```bash
-bash infra/hack/vendor/infra-kit/bootstrap/scaffold.sh \
-  --state-prefix my-org --root platform --tofu-dir infra
-```
-<!-- quickstart-scaffold:end -->
-
-Run `mise install` to install the generated tool pins.
-Follow [encryption key setup](docs/encryption-bootstrap.md) to create and test
-the operator, dedicated CI, and recovery identities. Put their **public
-recipients** in `infra/.sops.yaml`. Create the state bucket and scoped credentials
-as described in the [operations-file contract](docs/tofu-standard.md), fill in
-`infra/ops.env` from `infra/ops.env.example`, then run:
+Commit both `infra/hack/vendor/infra-kit/` and `infra/hack/vendor/infra-kit.lock`.
+The lock records the version and payload digest. Check the vendored files with:
 
 ```bash
-mise exec -- make encrypt-ops
-mise exec -- make validate
-mise exec -- make plan ROOT=platform
+bash infra/hack/vendor/infra-kit/bootstrap/verify.sh infra/hack/vendor/infra-kit
 ```
 
-Set the repository's `Production` environment secret `SOPS_AGE_KEY` to its
-dedicated CI identity. Configure that environment's protection rules before
-using the generated plan/apply workflow. For the first apply only, when no state
-exists yet, use `SKIP_STATE_BACKUP=1 mise exec -- make apply ROOT=platform`.
-Later applies take a state backup first.
+Follow [key setup](docs/encryption-bootstrap.md) to create and test an identity.
+Create `infra/.sops.yaml` with its **public recipient**, replacing the placeholder:
 
-Commit the generated layout, encrypted operations file, and both vendored paths:
-
-```text
-infra/hack/vendor/infra-kit/
-infra/hack/vendor/infra-kit.lock
+```yaml
+creation_rules:
+  - path_regex: \.(env|tfvars|hcl)$
+    age: REPLACE_WITH_YOUR_PUBLIC_RECIPIENT
 ```
 
-The lock records the version and exact payload digest. `verify.sh` checks it
-offline. `make validate` needs no production credentials or backend access,
-but OpenTofu initialization may download providers and modules. Plan and apply
-contact your backend and providers; they never upgrade infra-kit.
+Keep private identities outside the repository. Add plaintext secret filenames
+to `.gitignore` before using real data. With `SOPS_AGE_KEY_FILE` set to your
+identity, try a harmless value:
 
-## Adopt into an existing repository
+<!-- encryption-quickstart:begin -->
+```bash
+export INFRA_KIT_ROOT="$PWD/infra"
+kit=infra/hack/vendor/infra-kit
+umask 077
+printf 'example = "hello"\n' > infra/example.tfvars
+bash "$kit/hack/encrypt.sh" infra/example.tfvars
+bash "$kit/hack/with-decrypt.sh" CONFIG=infra/example.tfvars.enc \
+  -- bash -c 'cat "$CONFIG"'
+```
+<!-- encryption-quickstart:end -->
 
-Use the [consumer guide](docs/consumer.md) for incremental adoption, Makefile
-integration, validation hooks, and upgrades. The scaffold refuses to overwrite
-existing files.
+The example prints the harmless value to your terminal. For real secrets, pass
+the FIFO to the program that needs them. Each FIFO must be read once: a second
+read blocks, and leaving one unread makes the command fail. A receiving program
+can still log or persist its input.
+
+To edit the encrypted file:
+
+```bash
+bash "$kit/hack/edit-encrypted.sh" infra/example.tfvars.enc
+```
+
+## Upgrading
+
+The next release removes OpenTofu orchestration, repository scanning, project
+generators, and reusable CI workflows. Existing pins still work. Read the
+[migration notes](docs/migration.md) before upgrading a consumer that uses them.
+For Makefile integration and verified updates, see the [consumer guide](docs/consumer.md).
 
 ## Security model
 
@@ -123,9 +99,7 @@ existing files.
 - Vendored files are reviewable and verified offline against their committed
   digest.
 
-Repository-specific secret schemas, the OpenTofu roots themselves, provider
-choices, and the `.sops.yaml` recipient set remain in the consumer repository;
-how Tofu runs against state is the kit's ([docs/tofu-standard.md](/docs/tofu-standard.md)).
+Your repository supplies `.sops.yaml` recipients and any secret validation hooks.
 
 ## Development
 

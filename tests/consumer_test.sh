@@ -11,12 +11,10 @@ echo "consumer adoption"
 # from upstream, which is why they never noticed that the documented Makefile
 # referenced paths sync.sh had not vendored.
 consumer="$(mktemp -d "${TMPDIR:-/tmp}/infra-kit-consumer.XXXXXX")"
-mkdir -p "$consumer/infra/hack" "$consumer/infra/site"
+mkdir -p "$consumer/infra/hack"
 
-# The documented validate scans the git tree and validates every root.
 git -C "$consumer" init -q
 echo 'identity.txt' > "$consumer/.gitignore"
-echo '# site' > "$consumer/infra/site/main.tf"
 
 age-keygen -o "$consumer/identity.txt" 2>/dev/null
 recipient="$(grep -o 'age1[0-9a-z]*' "$consumer/identity.txt" | head -1)"
@@ -41,20 +39,10 @@ awk '/<!-- consumer-makefile:begin -->/{flag=1;next} /<!-- consumer-makefile:end
 grep -q 'sync-hack:' "$consumer/Makefile" || fail "extracted Makefile has no sync-hack target"
 pass "step 2 Makefile extracted from the documentation"
 
-# tofu is not part of this toolkit; stub it so `validate` exercises the
-# infra-kit half of the documented target.
-mkdir -p "$consumer/stub"
-printf '#!/usr/bin/env bash\nexit 0\n' > "$consumer/stub/tofu"
-chmod +x "$consumer/stub/tofu"
-export PATH="$consumer/stub:$PATH"
-
-printf '#!/usr/bin/env bash\nexit 0\n' > "$consumer/infra/hack/validate-secrets.sh"
-chmod +x "$consumer/infra/hack/validate-secrets.sh"
-
-out="$(cd "$consumer" && make validate 2>&1)" ||
-  fail "documented 'make validate' failed: $out"
-[[ "$out" == *"verified"* ]] || fail "validate did not verify the vendored payload: $out"
-pass "documented 'make validate' verifies the payload (OpenTofu stubbed)"
+out="$(cd "$consumer" && make verify 2>&1)" ||
+  fail "documented 'make verify' failed: $out"
+[[ "$out" == *"verified"* ]] || fail "verify did not verify the vendored payload: $out"
+pass "documented 'make verify' verifies the payload"
 
 # The target that would have failed before: it invokes the vendored sync.sh,
 # which has to replace the very directory it is running from.
@@ -69,9 +57,9 @@ fi
 [[ "$out" == *"vendored infra-kit"* ]] || fail "vendored sync.sh failed: $out"
 pass "the vendored sync.sh can replace its own directory"
 
-out="$(cd "$consumer" && make validate 2>&1)" ||
-  fail "validate failed after re-syncing: $out"
-pass "validate still passes after a self-replacing sync"
+out="$(cd "$consumer" && make verify 2>&1)" ||
+  fail "verify failed after re-syncing: $out"
+pass "verify still passes after a self-replacing sync"
 
 # Every path the Makefile names must exist in the vendored payload.
 while read -r path; do
@@ -79,10 +67,10 @@ while read -r path; do
 done < <(grep -oE 'infra/hack/vendor/infra-kit/[A-Za-z0-9_./-]+\.sh' "$consumer/Makefile" | sort -u)
 pass "every script the Makefile invokes was vendored"
 
-encrypt_script="$consumer/infra/hack/vendor/infra-kit/hack/encrypt.sh"
 printf 'secret = "%s"\n' "$(secret_token)" > "$consumer/infra/prod.secrets.auto.tfvars"
-( cd "$consumer" && INFRA_KIT_ROOT="$consumer/infra" SOPS_AGE_KEY_FILE="$consumer/identity.txt" \
-  "$encrypt_script" >/dev/null )
+(cd "$consumer" && make encrypt FILE=infra/prod.secrets.auto.tfvars >/dev/null)
 [[ -f "$consumer/infra/prod.secrets.auto.tfvars.enc" ]] ||
-  fail "the vendored encrypt.sh did not work from the consumer"
-pass "the vendored encrypt.sh works from the consumer layout"
+  fail "the documented encrypt target did not produce ciphertext"
+[[ ! -f "$consumer/infra/prod.secrets.auto.tfvars" ]] ||
+  fail "the documented encrypt target left plaintext"
+pass "documented make encrypt works from the consumer layout"
