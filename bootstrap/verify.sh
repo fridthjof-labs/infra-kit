@@ -18,12 +18,12 @@ lock="${vendor_dir%/}.lock"
 
 if [[ ! -d "$vendor_dir" ]]; then
   echo "error: vendored infra-kit not found: $vendor_dir" >&2
-  echo "run: make sync-hack" >&2
+  echo "run: make sync-infra-kit" >&2
   exit 1
 fi
 if [[ ! -f "$lock" ]]; then
   echo "error: lock file not found: $lock" >&2
-  echo "run: make sync-hack" >&2
+  echo "run: make sync-infra-kit" >&2
   exit 1
 fi
 
@@ -41,7 +41,7 @@ if [[ "$actual" != "$expected" ]]; then
   echo "error: vendored infra-kit does not match ${lock}" >&2
   echo "  expected sha256:${expected}" >&2
   echo "  actual   sha256:${actual}" >&2
-  echo "a vendored file was edited locally; re-run make sync-hack or revert it" >&2
+  echo "a vendored file was edited locally; re-run make sync-infra-kit or revert it" >&2
   exit 1
 fi
 

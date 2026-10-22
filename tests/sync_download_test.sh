@@ -12,7 +12,7 @@ trap 'rm -rf -- "$work"' EXIT
 
 # Shaped like a GitHub tag archive: a single root directory holding the payload.
 mkdir -p "$work/src/infra-kit-0.1.0"
-cp -R "$KIT_ROOT/hack" "$KIT_ROOT/bootstrap" "$KIT_ROOT/VERSION" "$work/src/infra-kit-0.1.0/"
+cp -R "$KIT_ROOT/scripts" "$KIT_ROOT/bootstrap" "$KIT_ROOT/make" "$KIT_ROOT/VERSION" "$work/src/infra-kit-0.1.0/"
 tar -czf "$work/release.tar.gz" -C "$work/src" infra-kit-0.1.0
 
 # Stub both downloaders, so the result does not depend on whether this machine
@@ -47,7 +47,7 @@ chmod +x "$stub/curl" "$stub/gh"
 standalone_sync="$work/sync.sh"
 cp "$KIT_ROOT/bootstrap/sync.sh" "$standalone_sync"
 
-vendor="$work/consumer/infra/hack/vendor/infra-kit"
+vendor="$work/consumer/infra/vendor/infra-kit"
 out="$(PATH="$stub:$PATH" bash "$standalone_sync" \
   --version v0.1.0 --vendor-dir "$vendor" --repo example/infra-kit 2>&1)" ||
   fail "the download branch failed: $out"
@@ -55,7 +55,7 @@ pass "sync.sh vendors from a downloaded archive"
 
 # The archive root and the staging directory both match infra-kit-*; unpacking
 # into a child directory is what keeps the search off the staging directory.
-[[ -d "$vendor/hack" && -d "$vendor/bootstrap" && -f "$vendor/VERSION" ]] ||
+[[ -d "$vendor/scripts" && -d "$vendor/bootstrap" && -f "$vendor/VERSION" ]] ||
   fail "the payload was not extracted from the archive root: $out"
 pass "the payload comes from the archive root, not the staging directory"
 

@@ -8,15 +8,44 @@
 [![Latest release](https://img.shields.io/github/v/release/fridthjof-labs/infra-kit)](https://github.com/fridthjof-labs/infra-kit/releases/latest)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-Shell tools for encrypting, editing, and using secrets with SOPS and age.
-I built infra-kit to share these operations across infrastructure repositories.
-The tools are vendored into each repository, pinned by version and digest.
+Shared secrets commands for my infrastructure repositories. SOPS and age handle
+encrypted files in Git; 1Password supplies runtime secrets through `op run`.
+Infra-kit adds a Make interface and a pinned, vendored copy of the helpers.
 
-- `encrypt.sh` encrypts a file and removes the plaintext on success.
-- `edit-encrypted.sh` edits a private temporary copy and encrypts it back.
-- `with-decrypt.sh` streams decrypted input to a command through a one-use FIFO.
+- `make encrypt` and `make edit` work on SOPS-encrypted files.
+- `make encrypt-ops` and `make edit-ops` use a separate operations file and hook.
+- `make op-run COMMAND='./scripts/deploy.sh'` supplies secrets from 1Password.
+- `scripts/with-decrypt.sh` gives a command one-use FIFOs for encrypted files.
+
+## Why this exists
+
+I use the same commands and validation hooks across my repositories. This keeps
+those recipes in one place. It is a small collection of personal conventions,
+not a secrets manager or a requirement for using SOPS or 1Password.
+
+The encryption helpers preserve validation hooks, atomic writes and temporary-file
+cleanup. There is no deployment orchestration or background service.
+
+## Layout
+
+- `make/secrets.mk`: shared SOPS, 1Password and vendor targets.
+- `scripts/`: encryption and command helpers; `scripts/lib/` is internal support.
+- `bootstrap/`: installation and offline payload verification.
+- `tests/` and `docs/`: executable examples, behavior checks and usage notes.
 
 ## Get started
+
+The shared Make interface and `scripts/` layout are unreleased. When upgrading
+from v0.5, follow the [layout migration](docs/migration.md#shared-make-interface).
+The release-pinned installer below still installs v0.5 until the next release.
+To try this branch, vendor the reviewed checkout before using the examples:
+
+```bash
+bash /path/to/infra-kit/bootstrap/sync.sh \
+  --source /path/to/infra-kit \
+  --version "$(git -C /path/to/infra-kit rev-parse HEAD)" \
+  --vendor-dir infra/vendor/infra-kit
+```
 
 Install Bash, Git, curl, [SOPS](https://github.com/getsops/sops), and
 [age](https://github.com/FiloSottile/age). Download and inspect the installer,
@@ -31,15 +60,15 @@ curl -fsSL --proto '=https' --tlsv1.2 \
 less /tmp/infra-kit-sync.sh
 bash /tmp/infra-kit-sync.sh \
   --version v0.5.0 \
-  --vendor-dir infra/hack/vendor/infra-kit
+  --vendor-dir infra/vendor/infra-kit
 ```
 <!-- x-release-please-end -->
 
-Commit both `infra/hack/vendor/infra-kit/` and `infra/hack/vendor/infra-kit.lock`.
+Commit both `infra/vendor/infra-kit/` and `infra/vendor/infra-kit.lock`.
 The lock records the version and payload digest. Check the vendored files with:
 
 ```bash
-bash infra/hack/vendor/infra-kit/bootstrap/verify.sh infra/hack/vendor/infra-kit
+bash infra/vendor/infra-kit/bootstrap/verify.sh infra/vendor/infra-kit
 ```
 
 Follow [key setup](docs/encryption-bootstrap.md) to create and test an identity.
@@ -58,11 +87,11 @@ identity, try a harmless value:
 <!-- encryption-quickstart:begin -->
 ```bash
 export INFRA_KIT_ROOT="$PWD/infra"
-kit=infra/hack/vendor/infra-kit
+kit=infra/vendor/infra-kit
 umask 077
 printf 'example = "hello"\n' > infra/example.tfvars
-bash "$kit/hack/encrypt.sh" infra/example.tfvars
-bash "$kit/hack/with-decrypt.sh" CONFIG=infra/example.tfvars.enc \
+bash "$kit/scripts/encrypt.sh" infra/example.tfvars
+bash "$kit/scripts/with-decrypt.sh" CONFIG=infra/example.tfvars.enc \
   -- bash -c 'cat "$CONFIG"'
 ```
 <!-- encryption-quickstart:end -->
@@ -72,15 +101,16 @@ the FIFO to the program that needs them. Each FIFO must be read once: a second
 read blocks, and leaving one unread makes the command fail. A receiving program
 can still log or persist its input.
 
-To edit the encrypted file:
+To use the shared `make edit` and `make encrypt` commands, include
+[`make/secrets.mk`](docs/consumer.md#2-add-makefile-targets). To call the script directly:
 
 ```bash
-bash "$kit/hack/edit-encrypted.sh" infra/example.tfvars.enc
+bash "$kit/scripts/edit-encrypted.sh" infra/example.tfvars.enc
 ```
 
 ## Upgrading
 
-The next release removes OpenTofu orchestration, repository scanning, project
+Version 0.5 removed OpenTofu orchestration, repository scanning, project
 generators, and reusable CI workflows. Existing pins still work. Read the
 [migration notes](docs/migration.md) before upgrading a consumer that uses them.
 For Makefile integration and verified updates, see the [consumer guide](docs/consumer.md).
