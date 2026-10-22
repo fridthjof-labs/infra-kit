@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   workflows:
-    name: validate workflows
+    name: workflows / validate workflows
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
