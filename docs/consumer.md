@@ -12,11 +12,11 @@ Nothing is installed yet, so fetch `sync.sh` once by hand:
 <!-- x-release-please-start-version -->
 ```bash
 curl -fsSL --proto '=https' --tlsv1.2 \
-  https://raw.githubusercontent.com/fridthjof-labs/infra-kit/v0.4.0/bootstrap/sync.sh \
+  https://raw.githubusercontent.com/fridthjof-labs/infra-kit/v0.5.0/bootstrap/sync.sh \
   -o /tmp/infra-kit-sync.sh
 
 bash /tmp/infra-kit-sync.sh \
-  --version v0.4.0 \
+  --version v0.5.0 \
   --vendor-dir infra/hack/vendor/infra-kit
 ```
 
@@ -33,7 +33,7 @@ If you are adopting a private fork instead, `sync.sh` falls back to an
 authenticated `gh`, and the manual fetch above becomes:
 
 ```bash
-gh api repos/YOUR-ORG/infra-kit/contents/bootstrap/sync.sh?ref=v0.4.0 \
+gh api repos/YOUR-ORG/infra-kit/contents/bootstrap/sync.sh?ref=v0.5.0 \
   --jq .content | base64 -d > /tmp/infra-kit-sync.sh
 ```
 <!-- x-release-please-end -->
@@ -47,7 +47,7 @@ The edit target uses its encrypted `.enc` counterpart.
 <!-- consumer-makefile:begin -->
 ```make
 INFRA_KIT         := infra/hack/vendor/infra-kit
-INFRA_KIT_VERSION := v0.4.0
+INFRA_KIT_VERSION := v0.5.0
 export INFRA_KIT_ROOT := $(CURDIR)/infra
 FILE ?= infra/secrets.env
 
@@ -103,7 +103,7 @@ Use another filename when your custom hook must validate an environment file.
 
 <!-- x-release-please-start-version -->
 ```bash
-make sync-hack INFRA_KIT_VERSION=v0.4.0
+make sync-hack INFRA_KIT_VERSION=v0.5.0
 git diff infra/hack/vendor      # review what changed
 make verify
 ```
