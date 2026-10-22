@@ -1,8 +1,9 @@
-# Bootstrap: one runnable path per repository type
+# Repository scaffolds
 
-Every repository type has one scaffold and one reusable workflow. The scaffold
-writes the files; the reusable workflow is what CI runs, pinned by commit. A
-version is stated once, in `mise.toml`, and CI installs it from there.
+The scaffolds create a starting layout in an empty repository and refuse to
+overwrite existing files. They pin tools in `mise.toml` and generate GitHub
+Actions workflows. Existing repositories can use the [consumer guide](consumer.md)
+to adopt just the parts they need.
 
 All paths start the same way, in an empty Git repository with
 [mise](https://mise.jdx.dev/getting-started.html) installed:
@@ -25,10 +26,10 @@ reusable workflows are referenced by full SHA, because a tag can move.
 bash hack/vendor/infra-kit/bootstrap/scaffold.sh --state-prefix <org> --root <root>
 ```
 
-Then the [operations-file contract](tofu-standard.md) and
-[encryption key setup](encryption-bootstrap.md). The first `make plan` against
-an adopted root must show `No changes`; many creates on a live root means the
-backend points at the wrong bucket or key.
+Then follow [running OpenTofu](tofu-standard.md) and
+[encryption key setup](encryption-bootstrap.md). When adopting an existing root,
+verify that the first plan shows only the changes you expect. Unexpected creates
+can mean the backend points at the wrong bucket or key; check before applying.
 
 ## Go module (library, service, daemon or CLI)
 
@@ -48,10 +49,7 @@ imports; CI then mints a scoped App token from `RELEASE_APP_ID` /
 `RELEASE_APP_PRIVATE_KEY` before Go fetches. `--test-os` narrows the matrix to
 the platforms that actually build.
 
-A service or daemon adds its `cmd/<name>` and its own release workflow; the
-baseline does not change. A desktop shell around the daemon adds a frontend
-under `frontend/` with its own `mise.toml` entries for node and the package
-manager, and calls `ts-ci.yml` from a second job.
+A service or daemon can add `cmd/<name>` and its own release workflow.
 
 ## TypeScript repository (website or app)
 
@@ -61,14 +59,17 @@ bash hack/vendor/infra-kit/bootstrap/scaffold-ts.sh \
 mise install && mise run setup && mise run check
 ```
 
-`package.json` must define a `check` script (lint, typecheck, test, build):
-that one script is the definition of done locally and in CI. The package
-manager version must equal `packageManager` in `package.json`.
+The generated tasks run `package.json`'s `check` script. Define that script with
+the checks your project needs, and match the package manager version to
+`packageManager` in `package.json`.
 
-## After any scaffold
+## Review the generated files
 
-1. Commit and push; open the first pull request.
-2. Install the Tidebot GitHub App on the repository and create the labels its
-   `.github/tidebot.yaml` refers to (`tidebot labels --repo <org>/<name>`).
-3. Add the repository to the owner's settings-as-code root so its secrets and
-   rulesets are a reviewed change from then on.
+Run the generated checks locally and review the workflow permissions before
+committing. For infrastructure, configure the `Production` environment before
+running plan or apply in GitHub Actions.
+
+The Go and TypeScript scaffolds also write `.github/tidebot.yaml`. If you want
+automated review commands and merging, install [Tidebot](https://github.com/fridthjof-labs/tidebot)
+and create the configured labels. Otherwise, remove that file; it is not needed
+to build or test the project.

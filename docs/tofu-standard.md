@@ -1,17 +1,14 @@
-# The OpenTofu standard
+# Running OpenTofu
 
-How every infra-kit repository runs OpenTofu. Up to v0.2 the kit owned only
-encryption and vendoring, and each consumer hand-wrote its own driver; three
-repositories produced three dialects and two of the copies broke the same way
-(a script moved into the vendor directory and a caller kept the old path).
-From v0.3 the kit owns the execution layer too. A consumer states its layout;
-everything else is derived.
+The execution scripts share the work of loading encrypted credentials,
+initializing a backend, and backing up state before apply. Your repository
+supplies the roots, layout, and provider configuration.
 
 ## Layout
 
 ```
 repo/
-  Makefile                   thin facade; declares the layout, nothing else
+  Makefile                   commands and INFRA_KIT_* layout variables
   mise.toml                  local tool pins (opentofu, sops)
   hack/vendor/infra-kit/     the vendored kit, digest-locked
   tofu/                      INFRA_KIT_ROOT: .sops.yaml + encrypted files
@@ -30,7 +27,7 @@ repositories keep their directory names (`infra/` instead of `tofu/` is fine);
 the Makefile's exported `INFRA_KIT_*` variables are the source of truth, not
 the names.
 
-## One command per intent
+## Commands
 
 | Intent | Command | What actually runs |
 | --- | --- | --- |
@@ -40,7 +37,7 @@ the names.
 | Snapshot state | `make backup ROOT=x` | `tofu-run.sh x backup` |
 | Touch a secret | `make edit ROOT=x` / `make edit-ops` | `edit-encrypted.sh` |
 
-`tofu-run.sh` is the only path to production state, local and CI alike. It
+`tofu-run.sh` can be used locally and in CI. It
 decrypts the operations file through a one-use FIFO, validates the ops
 contract and the consumer's `INFRA_KIT_OPS_HOOK`, writes the backend config
 for the derived state key, runs `tofu init -reconfigure`, snapshots state
@@ -49,12 +46,12 @@ never touches disk.
 
 ## State
 
-- Backend: an S3-compatible object store (Cloudflare R2 in every current
-  consumer), native lockfile locking, path-style addressing. Every invariant
-  backend setting is committed in the root's `backend "s3" {}` block; only
+- Backend: an S3-compatible object store, native lockfile locking, and
+  path-style addressing. Static backend settings are committed in the root's
+  `backend "s3" {}` block; only
   bucket, key, and endpoint come from the operations file at init.
 - Keys are derived: `INFRA_KIT_STATE_PREFIX/<root>/production.tfstate`. A
-  root adopted with a pre-convention key pins it in a `state-key` file
+  root with an existing key can pin it in a `state-key` file
   instead of migrating a state object over a name.
 - R2 has no bucket versioning, so an apply pulls a checksummed snapshot into
   `state-backups/` (gitignored) first. A root's very first apply has nothing
@@ -87,12 +84,11 @@ holds exactly one secret — `SOPS_AGE_KEY`, the repository's dedicated age
 identity — because the operations file already carries everything else. The
 dispatch is the human gate; actions are pinned to commit SHAs.
 
-## What stays the consumer's
+## Repository configuration
 
-The roots themselves, provider choice and versions, the ops hook, the
-`.sops.yaml` recipient set, and any repository-specific automation. The kit
-never learns provider specifics: a new cloud is a new ops-file entry and new
-`.tf`, not a kit change.
+Your repository controls the roots, provider choice and versions, ops hook,
+`.sops.yaml` recipient set, and any additional automation. Provider credentials
+come from the operations file; provider configuration stays in the `.tf` files.
 
 ## Migrating an existing consumer
 

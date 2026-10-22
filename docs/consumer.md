@@ -2,9 +2,9 @@
 
 For a new repository, follow the
 [scaffold quickstart](../README.md#start-a-new-infrastructure-repository).
-This page is the contract behind that layout, and the path for an existing repository adopting
-it incrementally. The full execution model lives in
-[tofu-standard.md](tofu-standard.md).
+For an existing repository, the steps below show how to vendor the tools and
+add Makefile targets incrementally. See [running OpenTofu](tofu-standard.md) for
+the execution scripts and backend configuration.
 
 ## 1. Vendor it
 
@@ -127,8 +127,7 @@ PIV, not FIDO2. See [key setup](encryption-bootstrap.md) for requirements.
 
 ## 3. Write the adapters
 
-Everything repository-specific stays yours; since v0.3 that no longer includes
-the Tofu driver itself.
+Use validation hooks for checks specific to your repository.
 
 **`validate-secrets.sh`** — takes a plaintext file, exits non-zero if a
 required key is missing. This is the file that differed most between
@@ -168,7 +167,7 @@ contract (`INFRA_KIT_STATE_BUCKET`, `INFRA_KIT_STATE_ENDPOINT`, the two AWS
 keys); the hook asserts whatever else your providers need, and can treat an
 exceptional root differently instead of forking the driver.
 
-**Tofu execution is the kit's.** `tofu-run.sh` decrypts through one-use FIFOs,
+`tofu-run.sh` decrypts through one-use FIFOs,
 derives the state key, initializes the locked backend, snapshots state before
 apply, and streams root secrets as `-var-file`. `with-decrypt.sh` remains the
 seam for anything else that needs a secret in flight:
@@ -204,10 +203,9 @@ error: vendored infra-kit does not match infra/hack/vendor/infra-kit.lock
 a vendored file was edited locally; re-run make sync-hack or revert it
 ```
 
-Someone changed an upstream file in place. Either the change belongs upstream —
-send it there and sync a new version — or it belongs in your adapters. It does
-not belong in the vendor directory, which is how the three copies diverged in
-the first place.
+The vendored files differ from the committed lock. Review the changes before
+reverting or re-syncing. Keep repository-specific changes in your adapters so
+they are not overwritten by the next upgrade.
 
 `verify.sh` is itself vendored, so it guards against accident rather than
 against someone with commit access. The lock is committed: a change to either

@@ -8,14 +8,13 @@
 [![Latest release](https://img.shields.io/github/v/release/fridthjof-labs/infra-kit)](https://github.com/fridthjof-labs/infra-kit/releases/latest)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-Small, auditable shell tools for using SOPS-encrypted secrets with OpenTofu.
+Shell tools for using SOPS-encrypted secrets with OpenTofu. I built infra-kit
+to reuse the same encryption, state backup, and execution scripts across projects.
 Infra-kit is vendored into each infrastructure repository, pinned by version and
 digest. Verifying the vendored payload is offline; OpenTofu initialization
 may download providers and modules, and plan/apply contact remote services.
 
-It owns two layers:
-
-Encryption —
+The encryption tools can be used on their own:
 
 - `encrypt.sh` encrypts a plaintext file and removes the plaintext.
 - `edit-encrypted.sh` opens a mode-0600 temporary file, validates it, encrypts
@@ -23,25 +22,19 @@ Encryption —
 - `with-decrypt.sh` streams plaintext to a command through a FIFO, so plan and
   apply do not need a plaintext secrets file.
 
-Execution ([the OpenTofu standard](/docs/tofu-standard.md)) —
+For OpenTofu, the kit also provides [execution scripts](docs/tofu-standard.md):
 
-- `tofu-run.sh` is the one path to production state: it sources the encrypted
+- `tofu-run.sh` sources the encrypted
   operations file through a FIFO, derives each root's state key, initializes
   the locked backend, snapshots state before apply, and streams root secrets
   as a one-use `-var-file`.
 - `tofu-validate.sh` and `scan-repo.sh` validate without production credentials: per-root fmt,
   lock-file init, and validate, plus a scan for plaintext secrets, keys, and
   state in the checkout.
-- `bootstrap/scaffold.sh` writes the whole canonical consumer layout —
-  Makefile, sops rules, first root, gated CI workflow — into an empty
-  repository, so every new IaC repository starts identical.
-- `bootstrap/scaffold-go.sh` and `bootstrap/scaffold-ts.sh` do the same for a
-  Go module and a TypeScript repository: toolchain pinned once in `mise.toml`,
-  a CI workflow that calls the reusable `go-ci.yml` / `ts-ci.yml` here by
-  commit, and the Tidebot merge gate. See [bootstrap](docs/bootstrap.md).
 
-The [shared CI baseline](docs/ci-standard.md) adds workflow validation and
-portable runner, cache, permission and merge-gate conventions.
+Optional [scaffolds](docs/bootstrap.md) create a starting layout for infrastructure,
+Go, or TypeScript repositories. The kit also includes [reusable GitHub Actions
+workflows](docs/ci-standard.md); using them is independent of the encryption tools.
 
 ## Start a new infrastructure repository
 
@@ -123,9 +116,9 @@ existing files.
 - Vendored files are reviewable and verified offline against their committed
   digest.
 
-Repository-specific secret schemas, the OpenTofu roots themselves, provider
-choices, and the `.sops.yaml` recipient set remain in the consumer repository;
-how Tofu runs against state is the kit's ([docs/tofu-standard.md](/docs/tofu-standard.md)).
+Your repository supplies its OpenTofu roots, providers, secret validation hooks,
+and `.sops.yaml` recipients. See [running OpenTofu](docs/tofu-standard.md) for
+the layout and environment variables the execution scripts use.
 
 ## Development
 
