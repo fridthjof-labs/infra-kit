@@ -11,11 +11,8 @@ Usage:
   with-decrypt.sh NAME=path/to/file.enc [NAME=path/to/other.enc ...] -- command [args...]
 
 Example:
-  with-decrypt.sh \
-    TFVARS=infra/prod.secrets.auto.tfvars.enc \
-    BACKEND=infra/backend.prod.hcl.enc \
-    -- \
-    bash -lc 'tofu init -reconfigure -backend-config="$BACKEND" && tofu apply -var-file="$TFVARS"'
+  with-decrypt.sh CONFIG=secrets.env.enc -- \
+    bash -c 'some-tool --config "$CONFIG"'
 
 Each NAME becomes an environment variable pointing to a temporary FIFO.
 Plaintext is streamed to the command and never written to a regular file.

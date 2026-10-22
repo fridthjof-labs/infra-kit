@@ -5,8 +5,7 @@ set -euo pipefail
 # records version and digest in infra-kit.lock.
 #
 # This is the only command that downloads infra-kit code. verify.sh checks
-# the committed bytes offline. OpenTofu may download providers and modules,
-# and plan/apply contact remote services; neither upgrades the kit.
+# the committed bytes offline. Encryption commands never upgrade the kit.
 
 usage() {
   cat <<'EOF'

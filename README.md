@@ -78,16 +78,12 @@ To edit the encrypted file:
 bash "$kit/hack/edit-encrypted.sh" infra/example.tfvars.enc
 ```
 
-## OpenTofu integration
+## Upgrading
 
-The kit also retains helpers for validation, state backups, and plan/apply.
-Use the [consumer guide](docs/consumer.md) for Makefile integration and
-[running OpenTofu](docs/tofu-standard.md) for the backend and operations-file
-contract. These helpers are optional; the encryption commands work independently.
-
-Project generators and reusable CI workflows are being removed in the next
-release. Existing version pins still work. See [migration notes](docs/migration.md)
-before upgrading.
+The next release removes OpenTofu orchestration, repository scanning, project
+generators, and reusable CI workflows. Existing pins still work. Read the
+[migration notes](docs/migration.md) before upgrading a consumer that uses them.
+For Makefile integration and verified updates, see the [consumer guide](docs/consumer.md).
 
 ## Security model
 
@@ -104,7 +100,6 @@ before upgrading.
   digest.
 
 Your repository supplies `.sops.yaml` recipients and any secret validation hooks.
-The [OpenTofu guide](docs/tofu-standard.md) describes the optional execution helpers.
 
 ## Development
 

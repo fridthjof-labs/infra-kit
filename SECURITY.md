@@ -32,7 +32,7 @@ as urgent.
 - Someone with commit access to a consumer repository editing a vendored file
   and its lock in the same commit. The lock guards against accident; the
   committed diff is the real control.
-- Vulnerabilities in `sops`, `age`, or OpenTofu themselves — report those
+- Vulnerabilities in `sops` or `age` themselves — report those
   upstream.
 - Key management in a consumer repository: which recipients are in `.sops.yaml`,
   and who holds those identities, is the consumer's decision.
