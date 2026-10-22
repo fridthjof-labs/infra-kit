@@ -1,5 +1,5 @@
 # Test helpers: build a throwaway consumer repository with a real age identity,
-# then run the vendored scripts from .infra-kit/hack exactly as a consumer does.
+# then run the vendored scripts from .infra-kit/scripts exactly as a consumer does.
 # shellcheck shell=bash
 
 KIT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -20,17 +20,16 @@ pass() {
 }
 
 # Creates $consumer (repo root), $consumer/infra (INFRA_KIT_ROOT) and
-# $consumer/.infra-kit/hack (the vendored scripts), and exports the identity.
+# $consumer/.infra-kit/scripts (the vendored scripts), and exports the identity.
 make_consumer() {
   consumer="$(mktemp -d "${TMPDIR:-/tmp}/infra-kit-test.XXXXXX")"
   mkdir -p "$consumer/infra"
 
   # Vendored exactly as a consumer holds it: an upstream-owned directory
-  # nested under infra/hack, which is what broke the location-derived
-  # original — it would resolve INFRA_DIR to .../hack/vendor.
+  # nested under infra/vendor; its location must not determine the consumer root.
   bash "$KIT_ROOT/bootstrap/sync.sh" \
     --version "test" \
-    --vendor-dir "$consumer/infra/hack/vendor/infra-kit" \
+    --vendor-dir "$consumer/infra/vendor/infra-kit" \
     --source "$KIT_ROOT" >/dev/null
 
   age-keygen -o "$consumer/identity.txt" 2>/dev/null
@@ -49,9 +48,9 @@ EOF
   # shellcheck disable=SC2034
   # Read by the test files that source this helper.
   # shellcheck disable=SC2034
-  vendor="$consumer/infra/hack/vendor/infra-kit"
+  vendor="$consumer/infra/vendor/infra-kit"
   # shellcheck disable=SC2034
-  hack="$vendor/hack"
+  hack="$vendor/scripts"
 }
 
 cleanup_consumer() {

@@ -13,7 +13,7 @@ Usage:
   sync.sh --version VERSION --vendor-dir DIR [--repo OWNER/NAME] [--source PATH]
 
 Downloads infra-kit VERSION and replaces DIR with its vendored payload
-(hack/, bootstrap/, VERSION), then writes DIR.lock recording version and digest.
+(scripts/, make/, bootstrap/, VERSION), then writes DIR.lock recording version and digest.
 DIR must end in infra-kit so a typo cannot replace a broader directory.
 
   --source PATH   Vendor from a local checkout instead of downloading.
@@ -97,7 +97,7 @@ trap cleanup_staging EXIT
 # reaches a private repository or a private fork.
 download_archive() {
   local dest="$1"
-  local url="https://github.com/${repo}/archive/refs/tags/${version}.tar.gz"
+  local url="https://github.com/${repo}/archive/${version}.tar.gz"
 
   if curl -fsSL --proto '=https' --tlsv1.2 "$url" -o "$dest"; then
     return 0
@@ -133,8 +133,8 @@ else
   extracted="$(find "$unpacked" -mindepth 1 -maxdepth 1 -type d | head -1)"
 fi
 
-if [[ -z "$extracted" || ! -d "$extracted/hack" || ! -d "$extracted/bootstrap" ]]; then
-  echo "error: ${version} does not contain hack/ and bootstrap/" >&2
+if [[ -z "$extracted" || ! -d "$extracted/scripts" || ! -d "$extracted/bootstrap" || ! -f "$extracted/make/secrets.mk" ]]; then
+  echo "error: ${version} does not contain scripts/, make/secrets.mk and bootstrap/" >&2
   exit 1
 fi
 
@@ -142,8 +142,9 @@ fi
 # documented targets reference paths that were never installed.
 payload="${staging}/payload"
 mkdir -p "$payload"
-cp -R "$extracted/hack" "$payload/hack"
+cp -R "$extracted/scripts" "$payload/scripts"
 cp -R "$extracted/bootstrap" "$payload/bootstrap"
+cp -R "$extracted/make" "$payload/make"
 if [[ -f "$extracted/VERSION" ]]; then
   cp "$extracted/VERSION" "$payload/VERSION"
 fi

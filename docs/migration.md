@@ -1,7 +1,7 @@
 # Upgrading from 0.4.x
 
-The next release focuses infra-kit on encryption and verified vendoring.
-The encryption commands retain their paths and behavior.
+Version 0.5 focused infra-kit on encryption and verified vendoring.
+That release retained the encryption paths and behavior.
 
 ## Reusable workflows
 
@@ -32,3 +32,22 @@ This release does not migrate state or change any deployed infrastructure.
 
 The `ops.env` encryption compatibility rule remains: Bash syntax is checked,
 and the custom validation hook is bypassed. No backend schema is validated.
+
+## Shared Make interface
+
+The next release moves `hack/` to `scripts/` and adds `make/secrets.mk`.
+There are no changes to ciphertext formats, recipients or state operations.
+The old installer copies only `hack/`, so download the new release's
+`bootstrap/sync.sh` first and run it with that same release version. Do not
+use the v0.5 vendored installer for this transition. Existing pinned copies
+continue to work until deliberately upgraded.
+
+Update direct calls from `<vendor>/hack/` to `<vendor>/scripts/`, including
+any imports of `lib/common.sh`. Replace duplicated encryption recipes with the
+include shown in [the consumer guide](consumer.md). Preserve your file defaults
+and validation hooks; operations-file hooks use `INFRA_KIT_OPS_VALIDATE_HOOK`.
+`sync-hack` and `verify-hack` can remain local aliases for `sync-infra-kit` and
+`verify-infra-kit` so existing automation keeps working.
+
+New projects can vendor into `infra/vendor/infra-kit`. Existing vendor locations
+remain supported; relocating them is optional and independent of this upgrade.

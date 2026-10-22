@@ -37,7 +37,7 @@ grep -Fq "INFRA_KIT_VERSION := ${tag}" "$KIT_ROOT/docs/consumer.md" ||
 upgrade="$(awk '/^## Upgrading/{flag=1;next} /^## /{flag=0} flag' "$KIT_ROOT/docs/consumer.md")"
 [[ "$upgrade" == *"<!-- x-release-please-start-version -->"* ]] ||
   fail "Release Please does not own the upgrade example"
-[[ "$upgrade" == *"make sync-hack INFRA_KIT_VERSION=${tag}"* ]] ||
+[[ "$upgrade" == *"make sync-infra-kit INFRA_KIT_VERSION=${tag}"* ]] ||
   fail "upgrade command and VERSION disagree"
 pass "consumer-facing version pins match VERSION"
 

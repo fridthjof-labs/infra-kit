@@ -3,9 +3,9 @@
 check: lint test
 
 lint: pins
-	bash -n hack/*.sh hack/lib/*.sh bootstrap/*.sh tests/*.sh
-	shellcheck -x -P hack -P bootstrap -P tests --shell=bash \
-	  hack/*.sh hack/lib/*.sh bootstrap/*.sh tests/*.sh
+	bash -n scripts/*.sh scripts/lib/*.sh bootstrap/*.sh tests/*.sh
+	shellcheck -x -P scripts -P bootstrap -P tests --shell=bash \
+	  scripts/*.sh scripts/lib/*.sh bootstrap/*.sh tests/*.sh
 
 test:
 	@for t in tests/*_test.sh; do bash "$$t" || exit 1; done

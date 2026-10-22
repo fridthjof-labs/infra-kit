@@ -9,8 +9,8 @@ make_consumer
 token="$(secret_token)"
 
 # The regression this port exists for: vendored scripts live at
-# infra/hack/vendor/infra-kit, so deriving the root from their own location
-# resolves to .../hack/vendor and looks for the wrong .sops.yaml.
+# infra/vendor/infra-kit, so deriving the root from their own location
+# resolves to .../scripts/vendor and looks for the wrong .sops.yaml.
 # INFRA_KIT_ROOT is what makes relocation safe.
 printf 'secret = "%s"\n' "$token" > "$INFRA_KIT_ROOT/prod.secrets.auto.tfvars"
 "$hack/encrypt.sh" >/dev/null
