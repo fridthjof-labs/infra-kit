@@ -9,7 +9,7 @@ echo "tofu-run driver"
 make_consumer
 
 # The tofu layer also encrypts ops.env files; widen the test recipient rules
-# the way the scaffold writes them.
+# the documented operations-file format.
 cat > "$consumer/infra/.sops.yaml" <<EOF
 creation_rules:
   - path_regex: \.(tfvars|hcl|env)\$

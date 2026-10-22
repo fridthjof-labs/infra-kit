@@ -21,11 +21,9 @@ repo/
       state-key                 optional pinned state key for adopted roots
 ```
 
-`bootstrap/scaffold.sh` writes exactly this into an empty repository — one
-command, then replace the recipients and encrypt the operations file. Existing
-repositories keep their directory names (`infra/` instead of `tofu/` is fine);
-the Makefile's exported `INFRA_KIT_*` variables are the source of truth, not
-the names.
+Create the layout and use the [consumer Makefile](consumer.md) to wire up the
+commands. Existing repositories can keep their directory names (`infra/`
+instead of `tofu/` is fine); the exported `INFRA_KIT_*` variables set the paths.
 
 ## Commands
 
@@ -77,12 +75,11 @@ a dedicated per-repository key in CI, an offline recovery key — see
 
 ## CI
 
-The scaffolded workflow is the reference: validation on every PR and push
-with no credentials; plan and apply are explicit `workflow_dispatch` against
-the `Production` environment, apply additionally restricted to `main`. CI
-holds exactly one secret — `SOPS_AGE_KEY`, the repository's dedicated age
-identity — because the operations file already carries everything else. The
-dispatch is the human gate; actions are pinned to commit SHAs.
+Define CI in the consumer repository. Run validation on pull requests without
+production credentials. If you run plan/apply in Actions, scope the dedicated
+`SOPS_AGE_KEY` identity to a protected environment, restrict apply to your default
+branch, and require approval before it runs. Keep third-party actions pinned to
+commit SHAs. Infra-kit does not supply or configure these workflows.
 
 ## Repository configuration
 
@@ -92,13 +89,12 @@ come from the operations file; provider configuration stays in the `.tf` files.
 
 ## Migrating an existing consumer
 
-1. `make sync-hack INFRA_KIT_VERSION=<v0.3.x>`.
+1. Vendor a reviewed release using the [consumer guide](consumer.md).
 2. Move each root under the tofu dir (single-root repositories: one `git mv`
    of the `.tf` files into a named subdirectory; state is untouched).
 3. Pin each adopted root's existing key in `state-key`.
 4. Fold backend config and credentials into `ops.env.enc`
    (`make edit-ops`); delete the per-env encrypted backend file, the local
    driver scripts, and their CI plumbing.
-5. Replace driver Makefile targets with the kit ones (the scaffold's Makefile
-   is the reference), re-run `make validate`, then one CI `plan` per root
+5. Replace driver Makefile targets with the [consumer Makefile](consumer.md), re-run `make validate`, then one CI `plan` per root
    before trusting `apply` again.

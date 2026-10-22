@@ -1,10 +1,10 @@
 # Adopting infra-kit
 
-For a new repository, follow the
-[scaffold quickstart](../README.md#start-a-new-infrastructure-repository).
-For an existing repository, the steps below show how to vendor the tools and
-add Makefile targets incrementally. See [running OpenTofu](tofu-standard.md) for
-the execution scripts and backend configuration.
+This guide adds OpenTofu validation, state backups, and plan/apply targets to a
+repository. For encryption alone, start with the [README](../README.md#get-started).
+See [running OpenTofu](tofu-standard.md) for the backend configuration.
+Create your own roots, `.sops.yaml`, and operations file; infra-kit does not
+generate project files or CI workflows.
 
 ## 1. Vendor it
 
@@ -61,7 +61,7 @@ infra/
         VERSION
         hack/                    <- encrypt, edit, with-decrypt, tofu-run,
                                     tofu-validate, scan-repo
-        bootstrap/               <- sync, verify, digest, scaffold
+        bootstrap/               <- sync, verify, digest
 ```
 
 ## 2. Point the Makefile at it
