@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.6.0](https://github.com/fridthjof-labs/infra-kit/compare/v0.5.0...v0.6.0) (2026-10-22)
+
+
+### ⚠ BREAKING CHANGES
+
+* restore shared Make targets and clarify script layout ([#38](https://github.com/fridthjof-labs/infra-kit/issues/38))
+
+### Features
+
+* restore shared Make targets and clarify script layout ([#38](https://github.com/fridthjof-labs/infra-kit/issues/38)) ([aeb3769](https://github.com/fridthjof-labs/infra-kit/commit/aeb3769bd8aa2b3d29520715c14583934b6be141))
+
 ## [0.5.0](https://github.com/fridthjof-labs/infra-kit/compare/v0.4.0...v0.5.0) (2026-10-22)
 
 
